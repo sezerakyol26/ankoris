@@ -96,11 +96,11 @@ const DEFAULT_ACCOUNTS = [
     email: 'berk.yilmaz@ankoris.app',
     exam: 'YDS',
     avatar: 'BY',
-    streak: 3,
-    xp: 340,
-    level: 3,
-    freeze: 2,
-    dailyReviewed: 8,
+    streak: 1,
+    xp: 15,
+    level: 1,
+    freeze: 1,
+    dailyReviewed: 0,
     dailyTarget: 20
   },
   {
@@ -109,12 +109,12 @@ const DEFAULT_ACCOUNTS = [
     email: 'zeynep.kaya@tip.edu.tr',
     exam: 'YÖKDİL SAĞLIK',
     avatar: 'ZK',
-    streak: 9,
-    xp: 740,
-    level: 5,
-    freeze: 3,
-    dailyReviewed: 16,
-    dailyTarget: 30
+    streak: 4,
+    xp: 140,
+    level: 2,
+    freeze: 2,
+    dailyReviewed: 10,
+    dailyTarget: 20
   },
   {
     id: 'user_3',
@@ -123,8 +123,8 @@ const DEFAULT_ACCOUNTS = [
     exam: 'YÖKDİL SOSYAL',
     avatar: 'CÖ',
     streak: 2,
-    xp: 190,
-    level: 2,
+    xp: 65,
+    level: 1,
     freeze: 1,
     dailyReviewed: 4,
     dailyTarget: 15
@@ -165,7 +165,7 @@ class AccountManager {
       exam: exam,
       avatar: initials || 'ÖG',
       streak: 1,
-      xp: 50,
+      xp: 0,
       level: 1,
       freeze: 1,
       dailyReviewed: 0,
@@ -343,7 +343,7 @@ class ProgressManager {
       nextReviewAt: nextReview.toISOString()
     };
     this.save();
-    return { interval: newInterval, earnedXp: 10 };
+    return { interval: newInterval, earnedXp: 2 };
   }
 
   // 2. "ZATEN BİLİYORDUM" Aksiyonu: Kelimeyi doğrudan Usta / Kalıcı Hafıza seviyesine aktarır
@@ -365,7 +365,7 @@ class ProgressManager {
       nextReviewAt: nextReview.toISOString()
     };
     this.save();
-    return { interval: 30, earnedXp: 15 };
+    return { interval: 30, earnedXp: 3 };
   }
 }
 
@@ -681,10 +681,10 @@ function rateKnowledgeChoice(choiceType) {
   user.dailyReviewed += 1;
 
   const oldLevel = user.level;
-  user.level = Math.floor(user.xp / 150) + 1;
+  user.level = Math.floor(user.xp / 80) + 1;
   const leveledUp = user.level > oldLevel;
   const goalJustMet = user.dailyReviewed === user.dailyTarget;
-  if (goalJustMet) user.xp += 50;
+  if (goalJustMet) user.xp += 10;
 
   accountMgr.save();
 
@@ -693,7 +693,7 @@ function rateKnowledgeChoice(choiceType) {
     showToast(`🎖️ TEBRİKLER! Seviye Atladın: Lv.${user.level}`);
   } else if (goalJustMet) {
     triggerConfetti();
-    showToast(`🔥 GÜNLÜK HEDEF TAMAMLANDI! +50 XP Bonus!`);
+    showToast(`🔥 GÜNLÜK HEDEF TAMAMLANDI! +10 XP Bonus!`);
   }
 
   // Kart çevriliyse düzelt ve sonrakine geç
@@ -944,8 +944,8 @@ function handleQuizOptionClick(selectedBtn, selectedText, question) {
   if (isCorrect) {
     selectedBtn.classList.add('correct');
     quizMgr.correctCount++;
-    quizMgr.earnedXp += 15;
-    accountMgr.currentUser.xp += 15;
+    quizMgr.earnedXp += 5;
+    accountMgr.currentUser.xp += 5;
     accountMgr.save();
 
     // Doğru cevaplandığında kelimenin zorluk durumu pekiştirilir
@@ -955,7 +955,7 @@ function handleQuizOptionClick(selectedBtn, selectedText, question) {
     progressMgr.data[targetWord.id] = p;
     progressMgr.save();
 
-    showToast('🎯 Doğru! +15 XP Kazandın');
+    showToast('🎯 Doğru! +5 XP Kazandın');
   } else {
     // YANLIŞ CEVAPLANDI: Kelime anında "ZOR KELİME" havuzuna eklenir!
     selectedBtn.classList.add('wrong');
@@ -1391,8 +1391,8 @@ document.getElementById('btn-check-sentence').addEventListener('click', () => {
     return;
   }
 
-  sentenceFeedback.innerHTML = `<span style="color: #00F5A0;">🎯 Mükemmel kullanım! "${cleanWord}" kelimesini doğru bağlamda kullandın. +10 XP kazandın!</span>`;
-  accountMgr.currentUser.xp += 10;
+  sentenceFeedback.innerHTML = `<span style="color: #00F5A0;">🎯 Mükemmel kullanım! "${cleanWord}" kelimesini doğru bağlamda kullandın. +3 XP kazandın!</span>`;
+  accountMgr.currentUser.xp += 3;
   accountMgr.save();
   updateUI();
 });
@@ -1408,12 +1408,12 @@ function openLeaderboard() {
   document.getElementById('lb-my-freeze').textContent = user.freeze;
 
   const competitors = [
-    { rank: 1, name: 'Berk Yılmaz (YDS 95+)', xp: 980 },
-    { rank: 2, name: 'Dr. Zeynep Kaya', xp: 740 },
-    { rank: 3, name: 'Ahmet Demir', xp: 610 },
+    { rank: 1, name: 'Berk Yılmaz (YDS 95+)', xp: 185 },
+    { rank: 2, name: 'Dr. Zeynep Kaya', xp: 140 },
+    { rank: 3, name: 'Ahmet Demir', xp: 110 },
     { rank: 4, name: `${user.name} (Sen)`, xp: user.xp, isMe: true },
-    { rank: 5, name: 'Caner Özkan', xp: 290 },
-    { rank: 6, name: 'Elif Şahin', xp: 180 }
+    { rank: 5, name: 'Caner Özkan', xp: 65 },
+    { rank: 6, name: 'Elif Şahin', xp: 35 }
   ];
 
   competitors.sort((a, b) => b.xp - a.xp);
