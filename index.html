@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=5000.8">
 </head>
 <body>
 
@@ -40,6 +40,12 @@
       </div>
 
       <div class="header-right-actions">
+        <!-- 5.000 Kelimelik Sözlük Hızlı Butonu -->
+        <button class="header-vocab-badge" id="btn-header-dict" title="Tüm 5.000 Kelimelik Sözlüğü ve Arama Motorunu Aç">
+          <span class="vocab-dot"></span>
+          <span class="vocab-text">5.000 Kelime</span>
+        </button>
+
         <!-- Cep Telefonu Bağlantı & QR Butonu -->
         <button class="icon-btn mobile-qr-btn" id="btn-open-mobile-qr" title="Cep Telefonundan Aç (Mobil QR)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
@@ -61,10 +67,10 @@
           <span class="unit-icon" id="current-unit-icon">📚</span>
           <div class="unit-strip-text">
             <span class="unit-strip-title" id="current-unit-title">Ünite 1: YDS En Kritik Sıfatlar</span>
-            <span class="unit-strip-sub" id="current-unit-sub">5000 Kelimelik Kütüphane • Seçili: 1 Ünite</span>
+            <span class="unit-strip-sub" id="current-unit-sub">50 Ünite • Toplam 5.000 Kelime Kütüphanesi</span>
           </div>
         </div>
-        <button class="unit-change-btn">Üniteler ➔</button>
+        <button class="unit-change-btn">Kütüphane (5000) ➔</button>
       </div>
 
       <!-- Bilimsel Unutma Eğrisi & Akıllı Öncelik Uyarısı -->
@@ -89,6 +95,9 @@
         </button>
         <button class="mode-btn mode-quiz" id="btn-mode-quiz" title="Öğrenilen Kelimelerle Çoktan Seçmeli Test">
           <span class="mode-quiz-icon">📝</span> Test
+        </button>
+        <button class="mode-btn mode-dict" id="btn-mode-dict" title="Tüm 5.000 Kelimelik Sözlük & Canlı Arama">
+          <span class="mode-dict-icon">🔍</span> 5.000 Sözlük
         </button>
       </div>
 
@@ -197,7 +206,7 @@
     </footer>
 
 
-    <!-- 1. ÜNİTE VE ÖZEL ÇALIŞMA SEÇİCİ MODALI -->
+    <!-- 1. ÜNİTE VE 5.000 KELİMELİK SÖZLÜK MODALI -->
     <div class="bottom-sheet-backdrop" id="units-backdrop">
       <div class="bottom-sheet units-sheet" id="units-sheet">
         <div class="sheet-handle"></div>
@@ -206,60 +215,103 @@
             <span class="sheet-icon">📚</span>
             <div>
               <h3>YDS & YÖKDİL Kelime Kütüphanesi</h3>
-              <p class="sheet-subtitle">50 Ünite • 5000 Kelime • İstediğini Seç ve Çalış</p>
+              <p class="sheet-subtitle">50 Ünite • 5.000 Özgün Kelime • Sözlük & Arama</p>
             </div>
           </div>
           <button class="sheet-close" id="btn-close-units">&times;</button>
         </div>
 
-        <!-- Ünite Arama ve Kategori Filtreleri -->
-        <div class="units-search-bar">
-          <input type="text" id="unit-search-input" placeholder="Ünite veya kelime ara (örn: Sağlık, Sıfat, Phrasal)...">
+        <!-- Ünite ve Sözlük Geçiş Sekmeleri -->
+        <div class="library-nav-tabs">
+          <button class="lib-tab active" id="tab-btn-units">📚 50 Ünite Listesi</button>
+          <button class="lib-tab" id="tab-btn-dictionary">🔍 5.000 Kelimelik Sözlük & Arama</button>
         </div>
 
-        <div class="category-pills" id="category-pills">
-          <button class="cat-pill active" data-cat="ALL">Tümü (50 Ünite)</button>
-          <button class="cat-pill" data-cat="STUDIED">🌱 Çalıştıklarım</button>
-          <button class="cat-pill" data-cat="HARD">🔥 Zor Kelimeliler</button>
-          <button class="cat-pill" data-cat="YDS_SIFAT">Sıfatlar (10)</button>
-          <button class="cat-pill" data-cat="YDS_FIIL">Fiiller (10)</button>
-          <button class="cat-pill" data-cat="YOKDIL_SAGLIK">Sağlık (5)</button>
-          <button class="cat-pill" data-cat="YOKDIL_SOSYAL">Sosyal (5)</button>
-          <button class="cat-pill" data-cat="YOKDIL_FEN">Fen (5)</button>
-          <button class="cat-pill" data-cat="PHRASAL_VERB">Phrasal (5)</button>
-          <button class="cat-pill" data-cat="AWL">Akademik AWL (5)</button>
-        </div>
+        <!-- GÖRÜNÜM 1: 50 ÜNİTE LİSTESİ -->
+        <div class="lib-view-container" id="units-view-container">
+          <!-- Ünite Arama ve Kategori Filtreleri -->
+          <div class="units-search-bar">
+            <input type="text" id="unit-search-input" placeholder="Ünite veya kategori ara (örn: Sıfat, Fiil, Sağlık)...">
+          </div>
 
-        <!-- Hızlı Seçim Butonları -->
-        <div class="quick-selection-row">
-          <span id="selected-units-count-text">1 Ünite Seçili (100 Kelime)</span>
-          <div class="quick-btns">
-            <button class="link-btn" id="btn-select-all-units">Tümünü Seç</button>
-            <button class="link-btn" id="btn-clear-units">Temizle</button>
+          <div class="category-pills" id="category-pills">
+            <button class="cat-pill active" data-cat="ALL">Tümü (50 Ünite - 5.000 Kelime)</button>
+            <button class="cat-pill" data-cat="STUDIED">🌱 Çalıştıklarım</button>
+            <button class="cat-pill" data-cat="HARD">🔥 Zor Kelimeliler</button>
+            <button class="cat-pill" data-cat="YDS_SIFAT">Sıfatlar (10 Ünite)</button>
+            <button class="cat-pill" data-cat="YDS_FIIL">Fiiller (10 Ünite)</button>
+            <button class="cat-pill" data-cat="YOKDIL_SAGLIK">Sağlık (5 Ünite)</button>
+            <button class="cat-pill" data-cat="YOKDIL_SOSYAL">Sosyal (5 Ünite)</button>
+            <button class="cat-pill" data-cat="YOKDIL_FEN">Fen (5 Ünite)</button>
+            <button class="cat-pill" data-cat="PHRASAL_VERB">Phrasal (5 Ünite)</button>
+            <button class="cat-pill" data-cat="AWL">Akademik AWL (5 Ünite)</button>
+          </div>
+
+          <!-- Hızlı Seçim Butonları -->
+          <div class="quick-selection-row">
+            <span id="selected-units-count-text">1 Ünite Seçili (100 Kelime)</span>
+            <div class="quick-btns">
+              <button class="link-btn select-all-btn" id="btn-select-all-units">Tümünü Seç (5.000 Kelime)</button>
+              <button class="link-btn" id="btn-clear-units">Temizle</button>
+            </div>
+          </div>
+
+          <!-- Ünite Listesi -->
+          <div class="units-list-container" id="units-list">
+            <!-- Dinamik Ünite Kartları -->
+          </div>
+
+          <!-- Seans Ayarları: Kelime Sayısı Seçimi -->
+          <div class="session-settings-box">
+            <div class="settings-title">Bu Seans İçin Kelime Limiti:</div>
+            <div class="word-limit-chips" id="word-limit-chips">
+              <button class="limit-chip" data-limit="10">10 Kelime</button>
+              <button class="limit-chip active" data-limit="20">20 Kelime</button>
+              <button class="limit-chip" data-limit="50">50 Kelime</button>
+              <button class="limit-chip" data-limit="100">100 Kelime</button>
+              <button class="limit-chip" data-limit="500">500 Kelime</button>
+              <button class="limit-chip" data-limit="5000">5000 (Tümü)</button>
+            </div>
+          </div>
+
+          <div class="sheet-footer">
+            <button class="btn-start-custom-session" id="btn-start-session">
+              <span id="btn-start-text">🎯 Seçili Ünitelerle Seansı Başlat (20 Kelime)</span>
+            </button>
           </div>
         </div>
 
-        <!-- Ünite Listesi -->
-        <div class="units-list-container" id="units-list">
-          <!-- Dinamik Ünite Kartları -->
-        </div>
-
-        <!-- Seans Ayarları: Kelime Sayısı Seçimi -->
-        <div class="session-settings-box">
-          <div class="settings-title">Bu Seans İçin Kelime Limiti:</div>
-          <div class="word-limit-chips" id="word-limit-chips">
-            <button class="limit-chip" data-limit="10">10 Kelime</button>
-            <button class="limit-chip active" data-limit="20">20 Kelime</button>
-            <button class="limit-chip" data-limit="50">50 Kelime</button>
-            <button class="limit-chip" data-limit="100">100 Kelime</button>
-            <button class="limit-chip" data-limit="5000">Tümü</button>
+        <!-- GÖRÜNÜM 2: 5.000 KELİMELİK CANLI SÖZLÜK VE ARAMA -->
+        <div class="lib-view-container" id="dictionary-view-container" style="display: none;">
+          <div class="dict-search-bar">
+            <span class="dict-search-icon">🔍</span>
+            <input type="text" id="dict-search-input" placeholder="5.000 kelime içinde canlı ara (örn: subtle, abandon, kanıt)...">
+            <button class="dict-search-clear" id="btn-clear-dict-search" style="display: none;">&times;</button>
           </div>
-        </div>
 
-        <div class="sheet-footer">
-          <button class="btn-start-custom-session" id="btn-start-session">
-            <span id="btn-start-text">🎯 Seçili Ünitelerle Seansı Başlat (20 Kelime)</span>
-          </button>
+          <div class="dict-filter-chips" id="dict-filter-chips">
+            <button class="dict-chip active" data-pos="ALL">Tümü (5.000)</button>
+            <button class="dict-chip" data-pos="adjective">Sıfatlar (adj)</button>
+            <button class="dict-chip" data-pos="verb">Fiiller (verb)</button>
+            <button class="dict-chip" data-pos="noun">İsimler (noun)</button>
+            <button class="dict-chip" data-pos="adverb">Zarflar & Bağlaç</button>
+            <button class="dict-chip" data-pos="STUDIED">🌱 Çalıştıklarım</button>
+            <button class="dict-chip" data-pos="HARD">🔥 Zor Kelimeler</button>
+          </div>
+
+          <div class="dict-status-strip">
+            <span id="dict-results-count">5.000 / 5.000 Kelime Yüklü</span>
+            <span class="dict-verified-tag">✓ 100% Özgün 5.000 Kelime</span>
+          </div>
+
+          <div class="dictionary-scroll-area" id="dict-scroll-area">
+            <div class="dictionary-words-grid" id="dictionary-words-list">
+              <!-- Canlı 5000 kelime listelenir -->
+            </div>
+            <div class="dict-load-more-box" id="dict-load-more-box">
+              <button class="btn-dict-load-more" id="btn-dict-load-more">Daha Fazla Kelime Yükle (+50)</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -382,6 +434,7 @@
               <div class="security-actions-row">
                 <button class="sec-backup-btn" id="btn-export-backup">💾 Güvenli Yedek İndir (JSON)</button>
                 <button class="sec-backup-btn" id="btn-import-backup">📥 Yedeği Geri Yükle</button>
+                <button class="sec-backup-btn" id="btn-force-cache-clear" style="color: #00F5A0; border-color: rgba(0, 245, 160, 0.4);">🔄 5.000 Kelime Önbelleğini Yenile</button>
                 <input type="file" id="backup-file-input" style="display: none;" accept=".json">
               </div>
             </div>
@@ -609,7 +662,7 @@
   </div>
 
   <!-- 5000 Kelimelik Kütüphane & JS Motoru -->
-  <script src="words_library.js"></script>
-  <script src="app.js"></script>
+  <script src="words_library.js?v=5000.8"></script>
+  <script src="app.js?v=5000.8"></script>
 </body>
 </html>

@@ -584,11 +584,15 @@ function updateUI() {
       const uObj = (typeof ANKORIS_UNITS !== 'undefined') ? ANKORIS_UNITS.find(u => u.id === uId) : null;
       currentUnitIconEl.textContent = uObj ? uObj.icon : '📚';
       currentUnitTitleEl.textContent = uObj ? uObj.title : `Ünite ${uId}`;
-      currentUnitSubEl.textContent = `Seçili: 1 Ünite (${session.activeDeck.length} Kelime)`;
+      currentUnitSubEl.textContent = `50 Ünite • 5.000 Kelimelik Kütüphane (${session.activeDeck.length} Kart Yüklü)`;
+    } else if (count >= 50) {
+      currentUnitIconEl.textContent = '💎';
+      currentUnitTitleEl.textContent = 'Tüm Kütüphane (50 Ünite • 5.000 Kelime)';
+      currentUnitSubEl.textContent = `5.000 Kelimenin Tümü Destede Aktif (${session.activeDeck.length} Kart)`;
     } else {
       currentUnitIconEl.textContent = '📚';
       currentUnitTitleEl.textContent = `Özel Seans: ${count} Ünite Seçili`;
-      currentUnitSubEl.textContent = `Toplam ${session.activeDeck.length} Kelimelik Özel Deste`;
+      currentUnitSubEl.textContent = `5.000 Kelimelik Havuzdan ${session.activeDeck.length} Kart Destede`;
     }
   }
 
@@ -1043,9 +1047,13 @@ const unitsListEl = document.getElementById('units-list');
 const selectedUnitsCountText = document.getElementById('selected-units-count-text');
 const btnStartText = document.getElementById('btn-start-text');
 
-function openUnitsModal() {
-  renderUnitsList();
+function openUnitsModal(defaultTab = 'units') {
   unitsBackdrop.classList.add('active');
+  if (typeof switchLibraryTab === 'function') {
+    switchLibraryTab(defaultTab);
+  } else {
+    renderUnitsList();
+  }
 }
 
 function closeUnitsModal() {
@@ -1155,12 +1163,16 @@ function renderUnitsList() {
 function updateUnitsModalCounts() {
   const count = session.selectedUnitIds.size;
   const totalWords = count * 100;
-  selectedUnitsCountText.textContent = `${count} Ünite Seçili (~${totalWords} Kelime)`;
+  selectedUnitsCountText.textContent = `${count} Ünite Seçili (${totalWords.toLocaleString('tr-TR')} Kelime)`;
   const displayLimit = Math.min(session.wordLimit, totalWords);
-  btnStartText.textContent = `🎯 Seçili Ünitelerle Seansı Başlat (${displayLimit} Kelime)`;
+  if (count >= 50 && session.wordLimit >= 5000) {
+    btnStartText.textContent = `🎯 5.000 Kelimenin Tümüyle Seansı Başlat`;
+  } else {
+    btnStartText.textContent = `🎯 Seçili Ünitelerle Seansı Başlat (${displayLimit} Kelime)`;
+  }
 }
 
-// Filtreler & Arama
+// Filtreler & Arama (Ünite Listesi)
 document.querySelectorAll('.cat-pill').forEach(pill => {
   pill.addEventListener('click', () => {
     document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
@@ -1175,11 +1187,17 @@ document.getElementById('unit-search-input').addEventListener('input', (e) => {
   renderUnitsList();
 });
 
+// Tümünü Seç (5.000 Kelime)
 document.getElementById('btn-select-all-units').addEventListener('click', () => {
   const units = (typeof ANKORIS_UNITS !== 'undefined') ? ANKORIS_UNITS : [];
   units.forEach(u => session.selectedUnitIds.add(u.id));
+  session.wordLimit = 5000;
+  document.querySelectorAll('.limit-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.limit === '5000');
+  });
   updateUnitsModalCounts();
   renderUnitsList();
+  showToast('💎 Tüm 50 Ünite ve 5.000 Kelime Seçildi!');
 });
 
 document.getElementById('btn-clear-units').addEventListener('click', () => {
@@ -1205,6 +1223,232 @@ document.getElementById('btn-start-session').addEventListener('click', () => {
   updateUI();
   showToast(`✅ ${session.selectedUnitIds.size} Ünite, ${session.activeDeck.length} Kelimelik Seans Başlatıldı!`);
 });
+
+// --- 8.1. KÜTÜPHANE VE 5.000 KELİMELİK SÖZLÜK SEKMELERİ ---
+const tabBtnUnits = document.getElementById('tab-btn-units');
+const tabBtnDictionary = document.getElementById('tab-btn-dictionary');
+const unitsViewContainer = document.getElementById('units-view-container');
+const dictionaryViewContainer = document.getElementById('dictionary-view-container');
+
+function switchLibraryTab(tabName) {
+  if (tabName === 'units') {
+    if (tabBtnUnits) tabBtnUnits.classList.add('active');
+    if (tabBtnDictionary) tabBtnDictionary.classList.remove('active');
+    if (unitsViewContainer) unitsViewContainer.style.display = 'flex';
+    if (dictionaryViewContainer) dictionaryViewContainer.style.display = 'none';
+    renderUnitsList();
+  } else {
+    if (tabBtnUnits) tabBtnUnits.classList.remove('active');
+    if (tabBtnDictionary) tabBtnDictionary.classList.add('active');
+    if (unitsViewContainer) unitsViewContainer.style.display = 'none';
+    if (dictionaryViewContainer) dictionaryViewContainer.style.display = 'flex';
+    dictCurrentPage = 1;
+    renderDictionaryList();
+  }
+}
+
+if (tabBtnUnits) tabBtnUnits.addEventListener('click', () => switchLibraryTab('units'));
+if (tabBtnDictionary) tabBtnDictionary.addEventListener('click', () => switchLibraryTab('dictionary'));
+
+// Header 5.000 Kelime Butonu & Smart Mode 5.000 Sözlük Butonu
+const btnHeaderDict = document.getElementById('btn-header-dict');
+if (btnHeaderDict) {
+  btnHeaderDict.addEventListener('click', () => {
+    openUnitsModal();
+    switchLibraryTab('dictionary');
+  });
+}
+
+const btnModeDict = document.getElementById('btn-mode-dict');
+if (btnModeDict) {
+  btnModeDict.addEventListener('click', () => {
+    openUnitsModal();
+    switchLibraryTab('dictionary');
+  });
+}
+
+// --- 8.2. 5.000 KELİMELİK SÖZLÜK & CANLI ARAMA MOTORU ---
+let dictCurrentPos = 'ALL';
+let dictSearchQuery = '';
+let dictCurrentPage = 1;
+const dictPageSize = 60;
+let dictFilteredWords = [];
+
+const dictSearchInput = document.getElementById('dict-search-input');
+const btnClearDictSearch = document.getElementById('btn-clear-dict-search');
+const dictResultsCountEl = document.getElementById('dict-results-count');
+const dictionaryWordsListEl = document.getElementById('dictionary-words-list');
+const dictLoadMoreBox = document.getElementById('dict-load-more-box');
+const btnDictLoadMore = document.getElementById('btn-dict-load-more');
+
+function filterDictionaryWords() {
+  const allWords = (typeof ANKORIS_WORDS !== 'undefined') ? ANKORIS_WORDS : [];
+  const q = dictSearchQuery.toLowerCase().trim();
+  const posFilter = dictCurrentPos;
+
+  return allWords.filter(w => {
+    // POS / Durum Filtresi
+    let matchesPos = true;
+    if (posFilter === 'ALL') {
+      matchesPos = true;
+    } else if (posFilter === 'STUDIED') {
+      const p = progressMgr.getWordProgress(w.id);
+      matchesPos = p.repetitions >= 1 || p.lapses > 0;
+    } else if (posFilter === 'HARD') {
+      const p = progressMgr.getWordProgress(w.id);
+      matchesPos = progressMgr.isHard(p);
+    } else {
+      const wPos = (w.pos || '').toLowerCase();
+      const wCat = (w.category || '').toLowerCase();
+      matchesPos = wPos.includes(posFilter.toLowerCase()) || wCat.includes(posFilter.toLowerCase());
+    }
+
+    if (!matchesPos) return false;
+
+    // Arama Kelimesi
+    if (!q) return true;
+    const enMatch = w.english.toLowerCase().includes(q);
+    const trMatch = w.turkish.toLowerCase().includes(q);
+    const exMatch = w.exampleEn && w.exampleEn.toLowerCase().includes(q);
+    return enMatch || trMatch || exMatch;
+  });
+}
+
+function renderDictionaryList() {
+  if (!dictionaryWordsListEl) return;
+  dictFilteredWords = filterDictionaryWords();
+  
+  if (dictResultsCountEl) {
+    dictResultsCountEl.textContent = `${dictFilteredWords.length.toLocaleString('tr-TR')} / 5.000 Kelime Bulundu`;
+  }
+  
+  if (btnClearDictSearch) {
+    btnClearDictSearch.style.display = dictSearchQuery ? 'block' : 'none';
+  }
+
+  const renderWords = dictFilteredWords.slice(0, dictCurrentPage * dictPageSize);
+  
+  if (renderWords.length === 0) {
+    dictionaryWordsListEl.innerHTML = `
+      <div style="text-align: center; padding: 40px 10px; color: var(--text-muted);">
+        <span style="font-size: 36px; display: block; margin-bottom: 8px;">🔍</span>
+        <strong style="color: #fff; font-size: 14px;">"${dictSearchQuery}" ile eşleşen kelime bulunamadı.</strong>
+        <p style="font-size: 12px; margin-top: 6px;">Filtrenizi değiştirebilir veya arama kutusunu temizleyebilirsiniz.</p>
+      </div>
+    `;
+    if (dictLoadMoreBox) dictLoadMoreBox.style.display = 'none';
+    return;
+  }
+
+  dictionaryWordsListEl.innerHTML = renderWords.map(w => {
+    const p = progressMgr.getWordProgress(w.id);
+    const isHard = progressMgr.isHard(p);
+    const isStudied = p.repetitions >= 1;
+
+    return `
+      <div class="dict-word-card" data-word-id="${w.id}">
+        <div class="dict-word-top">
+          <div class="dict-word-en-group">
+            <span class="dict-word-en">${w.english}</span>
+            <span class="dict-word-phonetic">${w.phonetic || ''}</span>
+            <span class="dict-word-pos">${w.pos || 'kelime'}</span>
+            ${isHard ? '<span style="font-size: 10px; color: #FF5252; font-weight: 700;">🔥 Zor</span>' : ''}
+            ${isStudied ? '<span style="font-size: 10px; color: #00F5A0; font-weight: 700;">✓ Çalışıldı</span>' : ''}
+          </div>
+          <span class="dict-word-unit-badge">Ünite ${w.unit_id}</span>
+        </div>
+        <div class="dict-word-tr">${w.turkish}</div>
+        ${w.mnemonic ? `<div class="dict-word-mnemonic">🧠 Hafıza Çapası: ${w.mnemonic}</div>` : ''}
+        ${w.exampleEn ? `<div class="dict-word-example">"${w.exampleEn}" ➔ ${w.exampleTr || ''}</div>` : ''}
+        <div class="dict-word-actions">
+          <button class="btn-dict-tts" onclick="window.speakWordDirect('${w.english.replace(/'/g, "\\'")}')">🔊 Dinle</button>
+          <button class="btn-dict-practice" onclick="window.startPracticeWithWord('${w.id}')">🎯 Bu Kelimeyi Çalış</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (dictLoadMoreBox) {
+    if (dictFilteredWords.length > dictCurrentPage * dictPageSize) {
+      dictLoadMoreBox.style.display = 'block';
+      const remaining = dictFilteredWords.length - (dictCurrentPage * dictPageSize);
+      if (btnDictLoadMore) {
+        btnDictLoadMore.textContent = `Daha Fazla Kelime Yükle (+${Math.min(remaining, dictPageSize)} / Kalan ${remaining.toLocaleString('tr-TR')})`;
+      }
+    } else {
+      dictLoadMoreBox.style.display = 'none';
+    }
+  }
+}
+
+// Global Sözlük Etkileşim Fonksiyonları
+window.speakWordDirect = function(text) {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const cleanWord = text.split('(')[0].trim();
+    const utterance = new SpeechSynthesisUtterance(cleanWord);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.9;
+    window.speechSynthesis.speak(utterance);
+  }
+};
+
+window.startPracticeWithWord = function(wordId) {
+  const allWords = (typeof ANKORIS_WORDS !== 'undefined') ? ANKORIS_WORDS : [];
+  const target = allWords.find(w => w.id === wordId);
+  if (!target) return;
+
+  session.selectedUnitIds = new Set([target.unit_id]);
+  session.wordLimit = 50;
+  session.mode = 'UNITS';
+  session.buildDeck();
+  
+  const targetIdx = session.activeDeck.findIndex(w => w.id === target.id);
+  if (targetIdx > 0) {
+    const [card] = session.activeDeck.splice(targetIdx, 1);
+    session.activeDeck.unshift(card);
+  }
+  session.currentIndex = 0;
+  session.isFlipped = false;
+
+  closeUnitsModal();
+  updateUI();
+  showToast(`🎯 '${target.english}' kartı açıldı!`);
+};
+
+if (dictSearchInput) {
+  dictSearchInput.addEventListener('input', (e) => {
+    dictSearchQuery = e.target.value;
+    dictCurrentPage = 1;
+    renderDictionaryList();
+  });
+}
+
+if (btnClearDictSearch) {
+  btnClearDictSearch.addEventListener('click', () => {
+    if (dictSearchInput) dictSearchInput.value = '';
+    dictSearchQuery = '';
+    dictCurrentPage = 1;
+    renderDictionaryList();
+  });
+}
+
+document.querySelectorAll('.dict-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.dict-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    dictCurrentPos = chip.dataset.pos;
+    dictCurrentPage = 1;
+    renderDictionaryList();
+  });
+});
+
+if (btnDictLoadMore) {
+  btnDictLoadMore.addEventListener('click', () => {
+    dictCurrentPage++;
+    renderDictionaryList();
+  });
+}
 
 // --- 9. PROFİL & ÇOKLU KULLANICI & HAFIZA SAĞLIK RAPORU ---
 const profileBackdrop = document.getElementById('profile-backdrop');
@@ -1702,6 +1946,36 @@ if (cardEl) {
   });
 }
 
+// Force Cache Clear & Kütüphane Yenileme Butonu
+const btnForceCacheClear = document.getElementById('btn-force-cache-clear');
+if (btnForceCacheClear) {
+  btnForceCacheClear.addEventListener('click', async () => {
+    btnForceCacheClear.textContent = '⏳ Temizleniyor...';
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let registration of registrations) {
+          await registration.unregister();
+        }
+      }
+      showToast('🧹 Önbellek temizlendi! Sayfa yenileniyor...');
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 500);
+    } catch (e) {
+      window.location.reload(true);
+    }
+  });
+}
+
 // Başlangıç Deste Oluşturma & Arayüzü Yükleme
 session.buildDeck();
 updateUI();
+
+// Konsol & Global Doğrulama
+window.ANKORIS_WORDS_COUNT = (typeof ANKORIS_WORDS !== 'undefined') ? ANKORIS_WORDS.length : 0;
+console.log(`%c[ANKORIS KÜTÜPHANESİ AKTİF]%c Yüklenen Kelime Sayısı: ${window.ANKORIS_WORDS_COUNT} | Ünite Sayısı: ${(typeof ANKORIS_UNITS !== 'undefined') ? ANKORIS_UNITS.length : 0}`, 'color: #00F5A0; font-weight: bold;', 'color: #fff;');
