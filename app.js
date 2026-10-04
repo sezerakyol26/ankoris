@@ -176,6 +176,24 @@ class AccountManager {
     this.save();
     return newAcc;
   }
+
+  resetCurrentAccount() {
+    this.currentUser.xp = 0;
+    this.currentUser.level = 1;
+    this.currentUser.streak = 1;
+    this.currentUser.dailyReviewed = 0;
+    this.save();
+  }
+
+  resetAllAccountsData() {
+    this.accounts.forEach(acc => {
+      acc.xp = 0;
+      acc.level = 1;
+      acc.streak = 1;
+      acc.dailyReviewed = 0;
+    });
+    this.save();
+  }
 }
 
 const accountMgr = new AccountManager();
@@ -197,9 +215,15 @@ class ProgressManager {
     SecureStorage.set(this.storageKey, this.data);
   }
 
+  clearAllProgress() {
+    this.data = {};
+    localStorage.removeItem(this.storageKey);
+    this.save();
+  }
+
   // İlk açılışta kullanıcının unutma eğrisini ve zor kelimeleri deneyimlemesi için gerçekçi başlangıç verileri
   ensureSeedSimulatedData() {
-    if (Object.keys(this.data).length === 0) {
+    if (Object.keys(this.data).length === 0 && !localStorage.getItem('ankoris_skip_seed')) {
       const now = Date.now();
       const oneDay = 24 * 3600 * 1000;
 
@@ -1556,17 +1580,59 @@ document.getElementById('btn-create-account').addEventListener('click', () => {
   showToast(`🎉 Hoş geldin ${created.name}! Hesabın oluşturuldu.`);
 });
 
-// İlerlemeyi Sıfırla
-document.getElementById('btn-reset-user-progress').addEventListener('click', () => {
-  if (confirm('Bu oturumun kelime ilerlemesini sıfırlamak istiyor musun?')) {
-    accountMgr.currentUser.dailyReviewed = 0;
-    accountMgr.save();
+// --- 9.1. PROFİL VE VERİ SIFIRLAMA İŞLEMLERİ ---
+const btnResetCurrentProfile = document.getElementById('btn-reset-current-profile');
+if (btnResetCurrentProfile) {
+  btnResetCurrentProfile.addEventListener('click', () => {
+    const curName = accountMgr.currentUser.name;
+    const confirmed = confirm(
+      `⚠️ "${curName}" profilinin tüm kazanılmış XP'leri (0 XP), seviyesi ve kelime çalışma geçmişi SIFIRLANACAKTIR.\n\nEmin misiniz?`
+    );
+    if (!confirmed) return;
+
+    localStorage.setItem('ankoris_skip_seed', 'true');
+    accountMgr.resetCurrentAccount();
+    progressMgr.clearAllProgress();
     session.currentIndex = 0;
+    session.buildDeck();
+    renderProfileModal();
     updateUI();
-    closeProfileModal();
-    showToast('Seans ilerlemesi sıfırlandı.');
-  }
-});
+    showToast(`✅ "${curName}" profilinin tüm verileri sıfırlandı (0 XP).`);
+  });
+}
+
+const btnResetAllProfiles = document.getElementById('btn-reset-all-profiles');
+if (btnResetAllProfiles) {
+  btnResetAllProfiles.addEventListener('click', () => {
+    const confirmed = confirm(
+      `🚨 DİKKAT: Uygulamadaki TÜM kayıtlı profillerin (tüm kullanıcılar) XP'leri, seviyeleri, test sonuçları ve kelime çalışma geçmişleri kalıcı olarak SIFIRLANACAKTIR.\n\nBu işlem geri alınamaz. Devam etmek istiyor musunuz?`
+    );
+    if (!confirmed) return;
+
+    localStorage.setItem('ankoris_skip_seed', 'true');
+    accountMgr.resetAllAccountsData();
+
+    // Tüm ankoris_progress_* anahtarlarını localStorage'dan temizle
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('ankoris_progress_')) {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+
+    // Aktif kullanıcının ilerleme yöneticisini taze başlat ve temizle
+    progressMgr = new ProgressManager(accountMgr.currentUser.id);
+    progressMgr.clearAllProgress();
+
+    session.currentIndex = 0;
+    session.buildDeck();
+    renderProfileModal();
+    updateUI();
+    showToast('🚨 Tüm profillerin tüm verileri başarıyla sıfırlandı!');
+  });
+}
 
 // --- 10. MNEVO AI AKILLI KOÇ ---
 const mnevoBackdrop = document.getElementById('mnevo-backdrop');
@@ -1651,20 +1717,17 @@ function openLeaderboard() {
   document.getElementById('lb-my-streak').textContent = user.streak;
   document.getElementById('lb-my-freeze').textContent = user.freeze;
 
-  const competitors = [
-    { rank: 1, name: 'Berk Yılmaz (YDS 95+)', xp: 185 },
-    { rank: 2, name: 'Dr. Zeynep Kaya', xp: 140 },
-    { rank: 3, name: 'Ahmet Demir', xp: 110 },
-    { rank: 4, name: `${user.name} (Sen)`, xp: user.xp, isMe: true },
-    { rank: 5, name: 'Caner Özkan', xp: 65 },
-    { rank: 6, name: 'Elif Şahin', xp: 35 }
-  ];
+  const competitors = accountMgr.accounts.map(acc => ({
+    name: acc.name + (acc.id === user.id ? ' (Sen)' : ''),
+    xp: acc.xp,
+    isMe: acc.id === user.id
+  }));
 
   competitors.sort((a, b) => b.xp - a.xp);
 
   leaderboardListEl.innerHTML = '';
-  competitors.slice(3).forEach((item, index) => {
-    const rank = index + 4;
+  competitors.forEach((item, index) => {
+    const rank = index + 1;
     const div = document.createElement('div');
     div.className = `lb-item ${item.isMe ? 'is-me' : ''}`;
     div.innerHTML = `

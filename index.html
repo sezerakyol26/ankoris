@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=5000.8">
+  <link rel="stylesheet" href="style.css?v=5000.9">
 </head>
 <body>
 
@@ -432,16 +432,46 @@
                 </div>
               </div>
               <div class="security-actions-row">
-                <button class="sec-backup-btn" id="btn-export-backup">💾 Güvenli Yedek İndir (JSON)</button>
+                <button class="sec-backup-btn" id="btn-export-backup">💾 Güvenli Yedek İndir</button>
                 <button class="sec-backup-btn" id="btn-import-backup">📥 Yedeği Geri Yükle</button>
-                <button class="sec-backup-btn" id="btn-force-cache-clear" style="color: #00F5A0; border-color: rgba(0, 245, 160, 0.4);">🔄 5.000 Kelime Önbelleğini Yenile</button>
+                <button class="sec-backup-btn btn-cache-refresh" id="btn-force-cache-clear">🔄 5.000 Kelime Önbelleğini Yenile & Temizle</button>
                 <input type="file" id="backup-file-input" style="display: none;" accept=".json">
               </div>
             </div>
           </div>
 
-          <div class="sheet-footer">
-            <button class="btn-logout" id="btn-reset-user-progress">Mevcut Seans İlerlemesini Sıfırla</button>
+          <!-- Profil & Veri Sıfırlama Bölümü (Gelişmiş Tasarım) -->
+          <div class="profile-danger-zone">
+            <div class="danger-zone-header">
+              <div class="danger-icon-box">⚙️</div>
+              <div class="danger-header-text">
+                <strong class="danger-title">Veri & İlerleme Yönetimi</strong>
+                <p class="danger-desc">Kişisel çalışma kayıtlarını veya tüm hesap verilerini sıfırlayın.</p>
+              </div>
+            </div>
+            <div class="danger-buttons-grid">
+              <button class="btn-danger-card btn-reset-single" id="btn-reset-current-profile">
+                <div class="danger-card-left">
+                  <span class="danger-card-icon">🔄</span>
+                  <div class="danger-card-text">
+                    <span class="danger-card-label">Bu Profilin İlerlemesini Sıfırla</span>
+                    <span class="danger-card-sub">Kazanılan XP (0 XP), seviye ve kelime geçmişi silinir</span>
+                  </div>
+                </div>
+                <span class="danger-card-badge single-badge">Sıfırla ➔</span>
+              </button>
+
+              <button class="btn-danger-card btn-reset-all" id="btn-reset-all-profiles">
+                <div class="danger-card-left">
+                  <span class="danger-card-icon">🚨</span>
+                  <div class="danger-card-text">
+                    <span class="danger-card-label">Tüm Profillerin Tüm Verilerini Sıfırla</span>
+                    <span class="danger-card-sub">Bütün kayıtlı hesapların XP, seviye ve hafıza havuzu sıfırlanır</span>
+                  </div>
+                </div>
+                <span class="danger-card-badge all-badge">Tümünü Sil ➔</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -662,7 +692,7 @@
   </div>
 
   <!-- 5000 Kelimelik Kütüphane & JS Motoru -->
-  <script src="words_library.js?v=5000.8"></script>
-  <script src="app.js?v=5000.8"></script>
+  <script src="words_library.js?v=5000.9"></script>
+  <script src="app.js?v=5000.9"></script>
 </body>
 </html>

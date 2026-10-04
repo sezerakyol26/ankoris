@@ -302,8 +302,8 @@ html, body {
 /* Akıllı Çalışma & Test Modları Çubuğu */
 .smart-modes-bar {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
   margin-bottom: 10px;
 }
 
@@ -311,46 +311,69 @@ html, body {
   background: var(--surface-color);
   border: 1px solid var(--border-color);
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 7px 2px;
+  padding: 8px 2px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
 
 .mode-btn:hover {
   transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 
 .mode-btn.active {
-  background: #1A222E;
+  background: var(--surface-light);
   border-color: var(--primary);
   color: #fff;
+  box-shadow: 0 0 12px rgba(0, 245, 160, 0.2);
 }
 
 .mode-btn.mode-hard.active {
   border-color: var(--srs-again);
   color: #FF7675;
+  box-shadow: 0 0 12px rgba(255, 82, 82, 0.25);
 }
 
 .mode-btn.mode-review.active {
+  border-color: var(--secondary);
+  color: #A29BFE;
+  box-shadow: 0 0 12px rgba(108, 92, 231, 0.25);
+}
+
+.mode-btn.mode-quiz.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 12px rgba(255, 177, 66, 0.25);
+}
+
+.mode-btn.mode-dict {
+  background: rgba(0, 245, 160, 0.05);
+  border-color: rgba(0, 245, 160, 0.2);
+  color: #00F5A0;
+}
+
+.mode-btn.mode-dict:hover {
+  background: rgba(0, 245, 160, 0.15);
   border-color: var(--primary);
-  color: var(--primary);
+  color: #fff;
 }
 
 .mode-badge {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   color: #fff;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 6px;
+  padding: 1px 4px;
+  border-radius: 5px;
 }
 
 .mode-btn.mode-hard .mode-badge {
@@ -774,28 +797,46 @@ html, body {
 }
 
 .security-actions-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
 .sec-backup-btn {
-  flex: 1;
   background: var(--surface-light);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #F1F5F9;
-  border-radius: 10px;
-  padding: 8px 10px;
+  border-radius: 12px;
+  padding: 9px 10px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .sec-backup-btn:hover {
   background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.sec-backup-btn.btn-cache-refresh {
+  grid-column: 1 / -1;
+  background: rgba(0, 245, 160, 0.08);
+  border-color: rgba(0, 245, 160, 0.3);
+  color: #00F5A0;
+}
+
+.sec-backup-btn.btn-cache-refresh:hover {
+  background: rgba(0, 245, 160, 0.18);
   border-color: var(--primary);
   color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 245, 160, 0.18);
 }
 
 /* ========================================================
@@ -1420,16 +1461,186 @@ html, body {
   color: var(--primary);
 }
 
-.btn-logout {
-  width: 100%;
-  background: none;
-  border: 1px solid var(--border-color);
-  color: #FF5252;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 10px;
-  border-radius: 12px;
+/* Profil & Veri Sıfırlama Bölümü (Gelişmiş Tasarım) */
+.profile-danger-zone {
+  background: linear-gradient(180deg, rgba(28, 20, 26, 0.75) 0%, rgba(19, 24, 32, 0.95) 100%);
+  border: 1px solid rgba(255, 82, 82, 0.25);
+  border-radius: 18px;
+  padding: 16px;
+  margin-top: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.danger-zone-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.danger-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 82, 82, 0.12);
+  border: 1px solid rgba(255, 82, 82, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.danger-header-text {
+  flex: 1;
+}
+
+.danger-title {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #FF7675;
+  letter-spacing: 0.2px;
+}
+
+.danger-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+.danger-buttons-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-danger-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 14px;
   cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  width: 100%;
+  gap: 12px;
+}
+
+.danger-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.danger-card-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.danger-card-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.danger-card-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.danger-card-sub {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.25;
+}
+
+.danger-card-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+/* Tek Profil Sıfırlama Butonu */
+.btn-reset-single {
+  background: rgba(255, 177, 66, 0.06);
+  border: 1px solid rgba(255, 177, 66, 0.25);
+}
+
+.btn-reset-single .danger-card-icon {
+  background: rgba(255, 177, 66, 0.12);
+  border-color: rgba(255, 177, 66, 0.3);
+}
+
+.btn-reset-single .single-badge {
+  background: rgba(255, 177, 66, 0.12);
+  border: 1px solid rgba(255, 177, 66, 0.35);
+  color: #FFB142;
+}
+
+.btn-reset-single:hover {
+  background: rgba(255, 177, 66, 0.12);
+  border-color: rgba(255, 177, 66, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 18px rgba(255, 177, 66, 0.15);
+}
+
+.btn-reset-single:hover .single-badge {
+  background: #FFB142;
+  color: #090D12;
+  box-shadow: 0 0 10px rgba(255, 177, 66, 0.4);
+}
+
+/* Tüm Profiller Sıfırlama Butonu */
+.btn-reset-all {
+  background: rgba(255, 82, 82, 0.08);
+  border: 1px solid rgba(255, 82, 82, 0.28);
+}
+
+.btn-reset-all .danger-card-icon {
+  background: rgba(255, 82, 82, 0.14);
+  border-color: rgba(255, 82, 82, 0.35);
+}
+
+.btn-reset-all .all-badge {
+  background: rgba(255, 82, 82, 0.14);
+  border: 1px solid rgba(255, 82, 82, 0.4);
+  color: #FF5252;
+}
+
+.btn-reset-all:hover {
+  background: rgba(255, 82, 82, 0.18);
+  border-color: rgba(255, 82, 82, 0.55);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(255, 82, 82, 0.25);
+}
+
+.btn-reset-all:hover .all-badge {
+  background: #FF5252;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255, 82, 82, 0.5);
 }
 
 /* Mnevo AI İçerik */
@@ -2163,9 +2374,24 @@ html, body {
   }
 
   .smart-modes-bar {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
     margin-bottom: 6px !important;
-    gap: 4px !important;
+    gap: 3px !important;
     flex-shrink: 0 !important;
+  }
+
+  .mode-btn {
+    font-size: 9.5px !important;
+    padding: 7px 1px !important;
+    border-radius: 10px !important;
+  }
+
+  .header-vocab-badge {
+    height: 36px !important;
+    padding: 0 8px !important;
+    font-size: 10.5px !important;
+    border-radius: 12px !important;
   }
 
   .progress-bar-container {
@@ -2270,24 +2496,27 @@ html, body {
    5.000 KELİMELİK SÖZLÜK, ARAMA & KÜTÜPHANE SEKME STİLLERİ
    ======================================================== */
 .header-vocab-badge {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(0, 245, 160, 0.12);
-  border: 1px solid rgba(0, 245, 160, 0.35);
-  color: #00F5A0;
-  padding: 5px 10px;
-  border-radius: 20px;
+  background: rgba(0, 245, 160, 0.08);
+  border: 1px solid rgba(0, 245, 160, 0.28);
+  color: var(--primary);
+  padding: 0 11px;
+  height: 40px;
+  border-radius: 14px;
   font-size: 11.5px;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
 
 .header-vocab-badge:hover {
-  background: rgba(0, 245, 160, 0.22);
-  transform: scale(1.03);
+  background: rgba(0, 245, 160, 0.18);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 245, 160, 0.2);
 }
 
 .vocab-dot {
@@ -2306,9 +2535,9 @@ html, body {
 
 .library-nav-tabs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 12px;
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(15, 23, 42, 0.85);
   padding: 4px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2318,22 +2547,26 @@ html, body {
   flex: 1;
   padding: 9px 12px;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 10px;
   color: var(--text-muted);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
   white-space: nowrap;
 }
 
-.lib-tab.active {
-  background: rgba(108, 92, 231, 0.3);
+.lib-tab:hover {
   color: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(108, 92, 231, 0.4);
+}
+
+.lib-tab.active {
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.35), rgba(0, 245, 160, 0.2));
+  color: #fff;
+  border-color: rgba(0, 245, 160, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 .lib-view-container {
