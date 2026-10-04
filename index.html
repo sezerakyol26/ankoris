@@ -7,6 +7,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Ankoris">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="manifest" href="manifest.json">
   <title>Ankoris - Zihinsel Kelime Çapası & Mnevo AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -167,7 +169,10 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
 
-      <!-- Kullanıcı Bilgi Seviyesi Aksiyon Butonları: "Öğrendim" & "Zaten Biliyordum" -->
+    </main>
+
+    <!-- Sabit Alt Aksiyon Çubuğu: "Öğrendim" & "Zaten Biliyordum" (Her Zaman Görünür) -->
+    <footer class="app-action-footer">
       <div class="srs-knowledge-actions">
         <button class="btn-knowledge-choice btn-learned" id="btn-srs-learned" title="Kelimeyi yeni öğrendim, aralıklı tekrar döngüsüne al">
           <div class="choice-icon-wrap">
@@ -189,8 +194,8 @@
           </div>
         </button>
       </div>
+    </footer>
 
-    </main>
 
     <!-- 1. ÜNİTE VE ÖZEL ÇALIŞMA SEÇİCİ MODALI -->
     <div class="bottom-sheet-backdrop" id="units-backdrop">

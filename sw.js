@@ -1,14 +1,19 @@
 // web_runner/sw.js
 // Ankoris Çevrimdışı Hizmet Çalışanı (Offline PWA Service Worker)
 
-const CACHE_NAME = 'ankoris-v2-cache';
+const CACHE_NAME = 'ankoris-v3-cache';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './words_library.js',
-  './manifest.json'
+  './manifest.json',
+  './apple-touch-icon.png',
+  './icon-192.png',
+  './icon-512.png',
+  './favicon.png',
+  './favicon.ico'
 ];
 
 self.addEventListener('install', (event) => {
