@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#090D12">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ankoris">
+  <link rel="manifest" href="manifest.json">
+  <title>Ankoris - Zihinsel Kelime Çapası & Mnevo AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Mobil Cihaz Çerçevesi (Gerçekçi Mobil Simülatör) -->
+  <div class="mobile-container">
+    
+    <!-- Üst AppBar -->
+    <header class="app-header">
+      <!-- Kullanıcı Profil Butonu -->
+      <button class="user-avatar-btn" id="btn-open-profile" title="Profil & Hesap Yönetimi">
+        <span class="avatar-initials" id="header-avatar">BY</span>
+        <span class="user-exam-badge" id="header-exam">YDS</span>
+      </button>
+
+      <!-- Streak, XP ve Seviye Rozeti -->
+      <div class="streak-badge" id="btn-open-leaderboard" title="Liderlik Tablosu">
+        <span class="flame-icon">🔥</span>
+        <span class="streak-val" id="streak-count">3</span>
+        <span class="badge-divider"></span>
+        <span class="xp-val" id="total-xp">340 XP</span>
+        <span class="badge-divider"></span>
+        <span class="level-chip" id="current-level">Lv.3</span>
+      </div>
+
+      <div class="header-right-actions">
+        <!-- Cep Telefonu Bağlantı & QR Butonu -->
+        <button class="icon-btn mobile-qr-btn" id="btn-open-mobile-qr" title="Cep Telefonundan Aç (Mobil QR)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+        </button>
+
+        <!-- Kütüphane / Ünite Seçici Butonu -->
+        <button class="icon-btn units-nav-btn" id="btn-open-units" title="5000 Kelimelik Ünite Kütüphanesi">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Kart Çalışma Alanı -->
+    <main class="study-viewport">
+      
+      <!-- Hızlı Ünite & Çalışma Çubuğu -->
+      <div class="active-unit-strip" id="btn-strip-open-units">
+        <div class="unit-strip-left">
+          <span class="unit-icon" id="current-unit-icon">📚</span>
+          <div class="unit-strip-text">
+            <span class="unit-strip-title" id="current-unit-title">Ünite 1: YDS En Kritik Sıfatlar</span>
+            <span class="unit-strip-sub" id="current-unit-sub">5000 Kelimelik Kütüphane • Seçili: 1 Ünite</span>
+          </div>
+        </div>
+        <button class="unit-change-btn">Üniteler ➔</button>
+      </div>
+
+      <!-- Bilimsel Unutma Eğrisi & Akıllı Öncelik Uyarısı -->
+      <div class="priority-alert-box" id="priority-alert-box" style="display: none;">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-text">
+          <strong>Hafıza Uyarısı:</strong> <span id="alert-summary">Kritik kelimeler unutulma eşiğinde!</span>
+        </div>
+        <button class="alert-action-btn" id="btn-quick-smart-review">Önce Tekrar Et</button>
+      </div>
+
+      <!-- Akıllı Çalışma & Test Modları -->
+      <div class="smart-modes-bar">
+        <button class="mode-btn mode-units active" id="btn-mode-units" title="Ünite Bazlı Çalışma">
+          <span>📚 Ünite</span>
+        </button>
+        <button class="mode-btn mode-hard" id="btn-mode-hard" title="Zorlandığın ve Yanlış Yaptığın Kelimeler">
+          <span class="mode-fire">🔥</span> Zor <span class="mode-badge" id="badge-hard-count">0</span>
+        </button>
+        <button class="mode-btn mode-review" id="btn-mode-review" title="Ebbinghaus Eğrisine Göre Tekrarı Gelenler">
+          <span class="mode-brain">🧠</span> Tekrar <span class="mode-badge" id="badge-review-count">0</span>
+        </button>
+        <button class="mode-btn mode-quiz" id="btn-mode-quiz" title="Öğrenilen Kelimelerle Çoktan Seçmeli Test">
+          <span class="mode-quiz-icon">📝</span> Test
+        </button>
+      </div>
+
+      <!-- İlerleme Çubuğu -->
+      <div class="progress-bar-container">
+        <div class="progress-info">
+          <span id="remaining-count">20 Kart Kaldı</span>
+          <span id="daily-goal-text">Hedef: 8/20</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="daily-progress-fill" style="width: 40%;"></div>
+        </div>
+      </div>
+
+      <!-- 3D Çevrilebilir & Kaydırılabilir Kart Destesi -->
+      <div class="card-deck-wrapper" id="card-deck">
+        <div class="flashcard" id="active-card">
+          
+          <!-- KARTIN ÖN YÜZÜ -->
+          <div class="card-face card-front">
+            <div class="card-header">
+              <span class="badge-category" id="card-category">YDS / AKADEMİK</span>
+              <button class="btn-tts" id="btn-tts" title="Telaffuz Dinle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+              </button>
+            </div>
+            
+            <div class="card-body">
+              <h1 class="english-word" id="card-word">Detrimental</h1>
+              <p class="phonetic" id="card-phonetic">/ˌdet.rɪˈmen.təl/</p>
+              <span class="pos-tag" id="card-pos">adjective</span>
+            </div>
+
+            <div class="card-footer">
+              <div class="tap-hint">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m10 15 5-3-5-3v6Z"/></svg>
+                <span>Anlamı ve Mnemonic için Çevir</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- KARTIN ARKA YÜZÜ -->
+          <div class="card-face card-back">
+            <div class="meaning-header">
+              <h2 class="turkish-meaning" id="card-meaning">Zararlı, hasar veren</h2>
+            </div>
+            
+            <!-- Mnemonik Çapa Kutusu -->
+            <div class="mnemonic-box">
+              <div class="mnemonic-tag">
+                <span>⚓ ZİHİNSEL ÇAPA (MNEMONIC)</span>
+              </div>
+              <p class="mnemonic-text" id="card-mnemonic">
+                De-Tri-Men-Tıl ➔ Deri montlu kimyager fabrikayı patlatıp doğaya ZARAR veriyor.
+              </p>
+            </div>
+
+            <!-- Örnek Cümle -->
+            <div class="example-box">
+              <p class="example-en" id="card-example-en">Smoking has a detrimental effect on lung health.</p>
+              <p class="example-tr" id="card-example-tr">Sigaranın akciğer sağlığı üzerinde zararlı bir etkisi vardır.</p>
+            </div>
+
+            <div class="sm2-stats-hint" id="sm2-stats-text">
+              SM-2: 0 Tekrar • EF: 2.50
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Mnevo AI İpucu Tetikleyici Buton -->
+      <button class="mnevo-trigger-btn" id="btn-open-mnevo">
+        <div class="ai-spark-icon">✨</div>
+        <div class="ai-trigger-text">
+          <strong>Mnevo AI:</strong> Zihinsel çapa ve ipucu üret
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+
+      <!-- Kullanıcı Bilgi Seviyesi Aksiyon Butonları: "Öğrendim" & "Zaten Biliyordum" -->
+      <div class="srs-knowledge-actions">
+        <button class="btn-knowledge-choice btn-learned" id="btn-srs-learned" title="Kelimeyi yeni öğrendim, aralıklı tekrar döngüsüne al">
+          <div class="choice-icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="choice-text-wrap">
+            <span class="choice-main-title">Öğrendim</span>
+            <span class="choice-sub-desc">Tekrar döngüsüne al • +10 XP</span>
+          </div>
+        </button>
+
+        <button class="btn-knowledge-choice btn-already-known" id="btn-srs-already-known" title="Kelimeyi zaten biliyordum, doğrudan Usta seviyesine aktar">
+          <div class="choice-icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </div>
+          <div class="choice-text-wrap">
+            <span class="choice-main-title">Zaten Biliyordum</span>
+            <span class="choice-sub-desc">Usta seviyesine aktar • +15 XP</span>
+          </div>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- 1. ÜNİTE VE ÖZEL ÇALIŞMA SEÇİCİ MODALI -->
+    <div class="bottom-sheet-backdrop" id="units-backdrop">
+      <div class="bottom-sheet units-sheet" id="units-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div class="sheet-title-group">
+            <span class="sheet-icon">📚</span>
+            <div>
+              <h3>YDS & YÖKDİL Kelime Kütüphanesi</h3>
+              <p class="sheet-subtitle">50 Ünite • 5000 Kelime • İstediğini Seç ve Çalış</p>
+            </div>
+          </div>
+          <button class="sheet-close" id="btn-close-units">&times;</button>
+        </div>
+
+        <!-- Ünite Arama ve Kategori Filtreleri -->
+        <div class="units-search-bar">
+          <input type="text" id="unit-search-input" placeholder="Ünite veya kelime ara (örn: Sağlık, Sıfat, Phrasal)...">
+        </div>
+
+        <div class="category-pills" id="category-pills">
+          <button class="cat-pill active" data-cat="ALL">Tümü (50 Ünite)</button>
+          <button class="cat-pill" data-cat="STUDIED">🌱 Çalıştıklarım</button>
+          <button class="cat-pill" data-cat="HARD">🔥 Zor Kelimeliler</button>
+          <button class="cat-pill" data-cat="YDS_SIFAT">Sıfatlar (10)</button>
+          <button class="cat-pill" data-cat="YDS_FIIL">Fiiller (10)</button>
+          <button class="cat-pill" data-cat="YOKDIL_SAGLIK">Sağlık (5)</button>
+          <button class="cat-pill" data-cat="YOKDIL_SOSYAL">Sosyal (5)</button>
+          <button class="cat-pill" data-cat="YOKDIL_FEN">Fen (5)</button>
+          <button class="cat-pill" data-cat="PHRASAL_VERB">Phrasal (5)</button>
+          <button class="cat-pill" data-cat="AWL">Akademik AWL (5)</button>
+        </div>
+
+        <!-- Hızlı Seçim Butonları -->
+        <div class="quick-selection-row">
+          <span id="selected-units-count-text">1 Ünite Seçili (100 Kelime)</span>
+          <div class="quick-btns">
+            <button class="link-btn" id="btn-select-all-units">Tümünü Seç</button>
+            <button class="link-btn" id="btn-clear-units">Temizle</button>
+          </div>
+        </div>
+
+        <!-- Ünite Listesi -->
+        <div class="units-list-container" id="units-list">
+          <!-- Dinamik Ünite Kartları -->
+        </div>
+
+        <!-- Seans Ayarları: Kelime Sayısı Seçimi -->
+        <div class="session-settings-box">
+          <div class="settings-title">Bu Seans İçin Kelime Limiti:</div>
+          <div class="word-limit-chips" id="word-limit-chips">
+            <button class="limit-chip" data-limit="10">10 Kelime</button>
+            <button class="limit-chip active" data-limit="20">20 Kelime</button>
+            <button class="limit-chip" data-limit="50">50 Kelime</button>
+            <button class="limit-chip" data-limit="100">100 Kelime</button>
+            <button class="limit-chip" data-limit="5000">Tümü</button>
+          </div>
+        </div>
+
+        <div class="sheet-footer">
+          <button class="btn-start-custom-session" id="btn-start-session">
+            <span id="btn-start-text">🎯 Seçili Ünitelerle Seansı Başlat (20 Kelime)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. PROFİL & ÇOKLU KULLANICI HESAP YÖNETİMİ MODALI -->
+    <div class="bottom-sheet-backdrop" id="profile-backdrop">
+      <div class="bottom-sheet profile-sheet" id="profile-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div class="sheet-title-group">
+            <span class="sheet-icon">👤</span>
+            <div>
+              <h3>Profil & Hesap Yönetimi</h3>
+              <p class="sheet-subtitle">Hesap değiştir veya yeni kullanıcı profili ekle</p>
+            </div>
+          </div>
+          <button class="sheet-close" id="btn-close-profile">&times;</button>
+        </div>
+
+        <div class="profile-scroll-content">
+          <!-- Aktif Kullanıcı Kartı -->
+          <div class="current-user-card">
+            <div class="user-avatar-large" id="profile-avatar-large">BY</div>
+            <div class="user-meta">
+              <h4 id="profile-name">Berk Yılmaz</h4>
+              <p id="profile-email">berk.yilmaz@ankoris.app</p>
+              <div class="user-tags">
+                <span class="tag-exam" id="profile-exam-tag">🎯 YDS Hazırlık</span>
+                <span class="tag-tier" id="profile-tier-tag">🥈 Gümüş Lig</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Kullanıcı İstatistik Özeti -->
+          <div class="user-stats-grid">
+            <div class="stat-box">
+              <span class="stat-icon">🔥</span>
+              <div class="stat-val" id="profile-stat-streak">3 Gün</div>
+              <div class="stat-lbl">Aktif Seri</div>
+            </div>
+            <div class="stat-box">
+              <span class="stat-icon">⚡</span>
+              <div class="stat-val" id="profile-stat-xp">340</div>
+              <div class="stat-lbl">Toplam XP</div>
+            </div>
+            <div class="stat-box">
+              <span class="stat-icon">🛡️</span>
+              <div class="stat-val" id="profile-stat-freeze">2 Adet</div>
+              <div class="stat-lbl">Seri Kalkanı</div>
+            </div>
+            <div class="stat-box">
+              <span class="stat-icon">📖</span>
+              <div class="stat-val" id="profile-stat-learned">18 Kelime</div>
+              <div class="stat-lbl">Öğrenilen</div>
+            </div>
+          </div>
+
+          <!-- Ebbinghaus Unutma Eğrisi & Zihinsel Sağlık Raporu -->
+          <div class="memory-health-card">
+            <div class="memory-health-header">
+              <span class="stat-icon">🧠</span>
+              <div>
+                <div class="memory-title">Ebbinghaus Zihinsel Hafıza Raporu</div>
+                <div class="memory-sub">Unutma eğrisine göre kelime kalıcılık dağılımı</div>
+              </div>
+            </div>
+            <div class="memory-bars-grid">
+              <div class="memory-item">
+                <span class="mem-label">👑 Ustalaşılan (Kalıcı):</span>
+                <span class="mem-val" id="mem-mastered-count" style="color: #00F5A0;">0 Kelime</span>
+              </div>
+              <div class="memory-item">
+                <span class="mem-label">🌱 Öğrenilmekte:</span>
+                <span class="mem-val" id="mem-learning-count" style="color: #6C5CE7;">0 Kelime</span>
+              </div>
+              <div class="memory-item">
+                <span class="mem-label">🔥 Zorlanılan (Kritik):</span>
+                <span class="mem-val" id="mem-hard-count" style="color: #FF5252;">0 Kelime</span>
+              </div>
+              <div class="memory-item">
+                <span class="mem-label">⏳ Unutulma Riskinde:</span>
+                <span class="mem-val" id="mem-due-count" style="color: #FFB142;">0 Kelime</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hesap Değiştirme Listesi -->
+          <div class="accounts-switch-section">
+            <div class="section-title">Kayıtlı Hesaplar Arasında Geçiş Yap:</div>
+            <div class="accounts-list" id="accounts-list">
+              <!-- Dinamik Hesaplar -->
+            </div>
+          </div>
+
+          <!-- Yeni Kullanıcı Ekleme / Kayıt Alanı -->
+          <div class="new-account-box">
+            <div class="section-title">+ Yeni Öğrenci Hesabı Ekle:</div>
+            <div class="input-form">
+              <input type="text" id="new-user-name" placeholder="Ad Soyad (örn: Elif Demir)">
+              <input type="email" id="new-user-email" placeholder="E-posta adresi">
+              <select id="new-user-exam">
+                <option value="YDS">YDS Hazırlık</option>
+                <option value="YOKDIL_SAGLIK">YÖKDİL Sağlık Bilimleri</option>
+                <option value="YOKDIL_SOSYAL">YÖKDİL Sosyal Bilimler</option>
+                <option value="YOKDIL_FEN">YÖKDİL Fen Bilimleri</option>
+                <option value="TOEFL">TOEFL / IELTS</option>
+              </select>
+              <button class="btn-add-account" id="btn-create-account">Hesap Oluştur ve Giriş Yap</button>
+            </div>
+
+            <!-- Veri Güvenliği ve Bütünlük Göstergesi -->
+            <div class="security-status-box">
+              <div class="security-status-header">
+                <span class="shield-icon">🛡️</span>
+                <div>
+                  <strong>Veri Güvenliği & Bütünlük Doğrulandı</strong>
+                  <p>Profiller SHA-256 sağlama anahtarlarıyla şifreli olarak izole edilir ve çevrimdışı kalıcı saklanır.</p>
+                </div>
+              </div>
+              <div class="security-actions-row">
+                <button class="sec-backup-btn" id="btn-export-backup">💾 Güvenli Yedek İndir (JSON)</button>
+                <button class="sec-backup-btn" id="btn-import-backup">📥 Yedeği Geri Yükle</button>
+                <input type="file" id="backup-file-input" style="display: none;" accept=".json">
+              </div>
+            </div>
+          </div>
+
+          <div class="sheet-footer">
+            <button class="btn-logout" id="btn-reset-user-progress">Mevcut Seans İlerlemesini Sıfırla</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Mnevo AI BottomSheet Paneli -->
+    <div class="bottom-sheet-backdrop" id="mnevo-backdrop">
+      <div class="bottom-sheet" id="mnevo-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div class="sheet-title-group">
+            <span class="sheet-icon">🤖</span>
+            <div>
+              <h3 id="mnevo-word-title">Mnevo AI Koç: Detrimental</h3>
+              <p class="sheet-subtitle">Kişiselleştirilmiş Nöro-Mnemonic Çözümleyici</p>
+            </div>
+          </div>
+          <button class="sheet-close" id="btn-close-mnevo">&times;</button>
+        </div>
+
+        <div class="sheet-content">
+          <div class="ai-response-bubble" id="mnevo-stream-box"></div>
+
+          <div class="sentence-checker-section" id="sentence-checker-section">
+            <label for="user-sentence-input">Bu kelimeyle kurduğun cümleyi dene:</label>
+            <div class="input-row">
+              <input type="text" id="user-sentence-input" placeholder="Örn: Excessive stress is detrimental to sleep...">
+              <button class="btn-check-sentence" id="btn-check-sentence">Denetle</button>
+            </div>
+            <div class="feedback-msg" id="sentence-feedback"></div>
+          </div>
+        </div>
+
+        <div class="sheet-footer">
+          <button class="btn-generate-mnemonic" id="btn-generate-ai">
+            <span>✨ Yeni Çapa ve Hikaye Üret</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Liderlik Tablosu & Lig Modalı -->
+    <div class="bottom-sheet-backdrop" id="leaderboard-backdrop">
+      <div class="bottom-sheet leaderboard-sheet" id="leaderboard-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div class="sheet-title-group">
+            <span class="sheet-icon">🏆</span>
+            <div>
+              <h3>Haftalık Lig Sıralaması</h3>
+              <p class="sheet-subtitle">Lig Bitişi: 3 Gün 14 Saat</p>
+            </div>
+          </div>
+          <button class="sheet-close" id="btn-close-leaderboard">&times;</button>
+        </div>
+
+        <div class="tier-tabs">
+          <button class="tier-tab" data-tier="bronze">Bronz</button>
+          <button class="tier-tab active" data-tier="silver">Gümüş</button>
+          <button class="tier-tab" data-tier="gold">Altın</button>
+          <button class="tier-tab" data-tier="diamond">Elmas</button>
+        </div>
+
+        <div class="podium-container" id="podium-area">
+          <div class="podium-col rank-2">
+            <div class="avatar">Z</div>
+            <div class="p-name">Zeynep K.</div>
+            <div class="p-xp">740 XP</div>
+            <div class="p-pedestal">#2</div>
+          </div>
+          <div class="podium-col rank-1">
+            <div class="crown">👑</div>
+            <div class="avatar">B</div>
+            <div class="p-name">Berk Y.</div>
+            <div class="p-xp">980 XP</div>
+            <div class="p-pedestal">#1</div>
+          </div>
+          <div class="podium-col rank-3">
+            <div class="avatar">A</div>
+            <div class="p-name">Ahmet D.</div>
+            <div class="p-xp">610 XP</div>
+            <div class="p-pedestal">#3</div>
+          </div>
+        </div>
+
+        <div class="leaderboard-list" id="leaderboard-list"></div>
+
+        <div class="my-rank-bar">
+          <div class="my-rank-num">#4</div>
+          <div class="my-info">
+            <div class="my-name">Sen (Kişisel Skorun)</div>
+            <div class="my-streak">Seri: <span id="lb-my-streak">3</span> Gün • <span id="lb-my-freeze">2</span> Kalkan</div>
+          </div>
+          <div class="my-xp" id="lb-my-xp">340 XP</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. KELİME TESTİ & ZOR KELİME DEĞERLENDİRME MODALI -->
+    <div class="bottom-sheet-backdrop" id="quiz-backdrop">
+      <div class="bottom-sheet quiz-sheet" id="quiz-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div class="sheet-title-group">
+            <span class="sheet-icon">📝</span>
+            <div>
+              <h3 id="quiz-title">Kelime Değerlendirme Testi</h3>
+              <p class="sheet-subtitle" id="quiz-subtitle">Yanlış cevaplar doğrudan "Zor Kelimeler" havuzuna eklenir</p>
+            </div>
+          </div>
+          <button class="sheet-close" id="btn-close-quiz">&times;</button>
+        </div>
+
+        <!-- Soru Ekranı -->
+        <div class="quiz-content" id="quiz-question-view">
+          <div class="quiz-progress-row">
+            <span id="quiz-progress-text">Soru 1 / 10</span>
+            <span class="quiz-xp-badge">+15 XP / Soru</span>
+          </div>
+          <div class="quiz-progress-track">
+            <div class="quiz-progress-fill" id="quiz-progress-fill" style="width: 10%;"></div>
+          </div>
+
+          <div class="quiz-question-card">
+            <div class="quiz-target-word" id="quiz-target-word">Detrimental</div>
+            <div class="quiz-target-phonetic" id="quiz-target-phonetic">/ˌdet.rɪˈmen.təl/</div>
+            <div class="quiz-example-sentence" id="quiz-example-sentence">
+              "Excessive stress has a ______ effect on the human body."
+            </div>
+          </div>
+
+          <div class="quiz-options-grid" id="quiz-options-container">
+            <!-- 4 Seçenek Butonu Dinamik Oluşturulur -->
+          </div>
+
+          <!-- Test İlerleme / Sonraki Soru Butonu -->
+          <div class="quiz-action-footer">
+            <button class="btn-quiz-next" id="btn-quiz-next" disabled>
+              <span>Sonraki Soruya İlerle ➔</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sonuç Ekranı -->
+        <div class="quiz-result-view" id="quiz-result-view" style="display: none;">
+          <div class="result-badge-circle" id="result-badge-circle">🏆</div>
+          <h3 class="result-title" id="result-title">Test Tamamlandı!</h3>
+          <p class="result-score-text" id="result-score-text">%80 Doğruluk • 8 Doğru, 2 Yanlış</p>
+          <div class="result-xp-chip" id="result-xp-chip">+120 XP Kazandın! ⚡</div>
+
+          <!-- Testte Yanlış Yapılan Kelimeler (Zor Kelimeye Eklenenler) -->
+          <div class="quiz-failed-section" id="quiz-failed-section">
+            <div class="failed-section-title">
+              <span>🔥 Testte Zorlandığın Kelimeler (Klinik Havuzuna Eklendi):</span>
+            </div>
+            <div class="failed-words-list" id="failed-words-list">
+              <!-- Yanlış yapılan kelimeler -->
+            </div>
+          </div>
+
+          <div class="result-actions">
+            <button class="btn-start-hard-from-quiz" id="btn-start-hard-from-quiz">
+              🔥 Bu Zor Kelimeleri Şimdi Çalış
+            </button>
+            <button class="btn-retake-quiz" id="btn-retake-quiz">
+              🔄 Yeni Test Başlat
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. MOBİL BAĞLANTI & QR KOD MODALI -->
+    <div class="bottom-sheet-backdrop" id="mobile-qr-backdrop">
+      <div class="bottom-sheet mobile-qr-sheet" id="mobile-qr-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div class="sheet-title-group">
+            <span class="sheet-icon">📱</span>
+            <div>
+              <h3>Mobilden Ankoris'i Aç</h3>
+              <p class="sheet-subtitle">Aynı Wi-Fi ağına bağlıyken kameranı okut</p>
+            </div>
+          </div>
+          <button class="sheet-close" id="btn-close-mobile-qr">&times;</button>
+        </div>
+
+        <div class="mobile-qr-content">
+          <div class="qr-code-wrapper">
+            <img src="qr_mobile.svg" alt="Mobil Bağlantı QR Kodu" class="qr-img" id="qr-img">
+          </div>
+          
+          <div class="mobile-url-box">
+            <span class="url-text" id="mobile-url-text">http://192.168.1.102:5173/</span>
+            <button class="btn-copy-url" id="btn-copy-url" title="Adresi Kopyala">📋 Kopyala</button>
+          </div>
+
+          <div class="mobile-pwa-tips">
+            <div class="pwa-tip-item">
+              <span class="tip-icon">🍏</span>
+              <p><strong>iOS (Safari):</strong> 'Paylaş' simgesine dokunun ve <strong>'Ana Ekrana Ekle'</strong> seçin.</p>
+            </div>
+            <div class="pwa-tip-item">
+              <span class="tip-icon">🤖</span>
+              <p><strong>Android (Chrome):</strong> Menüden (üç nokta) <strong>'Uygulamayı Yükle'</strong> seçin.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canvas Konfeti Parçacıkları -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Bildirim Balonu (Toast) -->
+    <div class="toast-notification" id="toast"></div>
+
+  </div>
+
+  <!-- 5000 Kelimelik Kütüphane & JS Motoru -->
+  <script src="words_library.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

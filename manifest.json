@@ -1,0 +1,24 @@
+{
+  "name": "Ankoris - Zihinsel Kelime Çapası & Mnevo AI",
+  "short_name": "Ankoris",
+  "description": "Bilimsel hafıza teknikleri ve Mnevo AI ile YDS & YÖKDİL kelime öğrenme sistemi",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#090D12",
+  "theme_color": "#090D12",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='42' fill='%23131821'/%3E%3Cpath d='M96 28v136M38 96c0 32 26 58 58 58s58-26 58-58' stroke='%2300F5A0' stroke-width='16' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='96' cy='46' r='14' fill='%236C5CE7'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%23131821'/%3E%3Cpath d='M256 74v364M102 256c0 85 69 154 154 154s154-69 154-154' stroke='%2300F5A0' stroke-width='42' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='256' cy='122' r='38' fill='%236C5CE7'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
