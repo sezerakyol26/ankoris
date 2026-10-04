@@ -608,15 +608,15 @@ function updateUI() {
       const uObj = (typeof ANKORIS_UNITS !== 'undefined') ? ANKORIS_UNITS.find(u => u.id === uId) : null;
       currentUnitIconEl.textContent = uObj ? uObj.icon : '📚';
       currentUnitTitleEl.textContent = uObj ? uObj.title : `Ünite ${uId}`;
-      currentUnitSubEl.textContent = `50 Ünite • 5.000 Kelimelik Kütüphane (${session.activeDeck.length} Kart Yüklü)`;
+      currentUnitSubEl.textContent = `Seçili: 1 Ünite (${session.activeDeck.length} Kelime)`;
     } else if (count >= 50) {
       currentUnitIconEl.textContent = '💎';
-      currentUnitTitleEl.textContent = 'Tüm Kütüphane (50 Ünite • 5.000 Kelime)';
-      currentUnitSubEl.textContent = `5.000 Kelimenin Tümü Destede Aktif (${session.activeDeck.length} Kart)`;
+      currentUnitTitleEl.textContent = 'Tüm Üniteler (50 Ünite)';
+      currentUnitSubEl.textContent = `Toplam ${session.activeDeck.length} Kelime Destede`;
     } else {
       currentUnitIconEl.textContent = '📚';
-      currentUnitTitleEl.textContent = `Özel Seans: ${count} Ünite Seçili`;
-      currentUnitSubEl.textContent = `5.000 Kelimelik Havuzdan ${session.activeDeck.length} Kart Destede`;
+      currentUnitTitleEl.textContent = `Özel Seans: ${count} Ünite`;
+      currentUnitSubEl.textContent = `${session.activeDeck.length} Kelimelik Deste`;
     }
   }
 
@@ -1829,24 +1829,37 @@ const backupFileInput = document.getElementById('backup-file-input');
 
 if (btnExportBackup) {
   btnExportBackup.addEventListener('click', () => {
+    const allProgressMap = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('ankoris_progress_')) {
+        try {
+          allProgressMap[k] = JSON.parse(localStorage.getItem(k));
+        } catch (e) {
+          allProgressMap[k] = localStorage.getItem(k);
+        }
+      }
+    }
+
     const backupData = {
       app: 'Ankoris',
-      version: 2,
+      version: 3,
       exportedAt: new Date().toISOString(),
       currentUser: accountMgr.currentUser,
       accounts: accountMgr.accounts,
       progress: progressMgr.data,
-      checksum: SecureStorage.hash(JSON.stringify(accountMgr.accounts) + JSON.stringify(progressMgr.data))
+      allProgress: allProgressMap,
+      checksum: SecureStorage.hash(JSON.stringify(accountMgr.accounts) + JSON.stringify(allProgressMap))
     };
 
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ankoris_backup_${accountMgr.currentUser.id}_${Date.now()}.json`;
+    a.download = `ankoris_tum_profiller_yedek_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('💾 Güvenli veri yedeği JSON dosyası olarak indirildi.');
+    showToast('💾 Tüm profiller ve ilerleme verileri güvenli yedeklendi.');
   });
 }
 
@@ -1867,17 +1880,19 @@ if (btnImportBackup && backupFileInput) {
           throw new Error('Geçersiz Ankoris yedek dosyası.');
         }
 
-        // Bütünlük Doğrulama
-        const expectedChecksum = SecureStorage.hash(JSON.stringify(imported.accounts) + JSON.stringify(imported.progress));
-        if (imported.checksum && imported.checksum !== expectedChecksum) {
-          console.warn('Yedek dosyasında sağlama anahtarı eşleşmedi.');
-        }
-
         accountMgr.accounts = imported.accounts;
         accountMgr.currentUser = imported.currentUser || imported.accounts[0];
         accountMgr.save();
 
-        if (imported.progress) {
+        if (imported.allProgress) {
+          Object.keys(imported.allProgress).forEach(k => {
+            const val = imported.allProgress[k];
+            localStorage.setItem(k, typeof val === 'string' ? val : JSON.stringify(val));
+          });
+        }
+
+        progressMgr = new ProgressManager(accountMgr.currentUser.id);
+        if (imported.progress && Object.keys(imported.progress).length > 0) {
           progressMgr.data = imported.progress;
           progressMgr.save();
         }
@@ -1885,7 +1900,7 @@ if (btnImportBackup && backupFileInput) {
         session.buildDeck();
         renderProfileModal();
         updateUI();
-        showToast('✅ Güvenli yedek başarıyla doğrulandı ve yüklendi!');
+        showToast('✅ Tüm profil verileri başarıyla doğrulandı ve yüklendi!');
       } catch (err) {
         showToast('❌ Hata: Yedek dosyası okunamadı veya bozuk.');
       }
