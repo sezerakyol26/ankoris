@@ -67,6 +67,25 @@
         <button class="unit-change-btn">Üniteler ➔</button>
       </div>
 
+      <!-- 20 Kelimelik Set Seçici Barı (1-20, 21-40, 41-60, 61-80, 81-100) -->
+      <div class="unit-set-bar" id="unit-set-bar">
+        <div class="set-nav-row">
+          <button class="set-nav-arrow" id="btn-prev-set" title="Önceki 20 Kelime">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="set-info-text">
+            <span class="set-info-title" id="set-info-title">Set 1 / 5</span>
+            <span class="set-info-range" id="set-info-range">(1 - 20. Kelimeler)</span>
+          </div>
+          <button class="set-nav-arrow" id="btn-next-set" title="Sonraki 20 Kelime">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <div class="set-pills-row" id="set-pills-row">
+          <!-- Dinamik 5 Set Butonu -->
+        </div>
+      </div>
+
       <!-- Bilimsel Unutma Eğrisi & Akıllı Öncelik Uyarısı -->
       <div class="priority-alert-box" id="priority-alert-box" style="display: none;">
         <span class="alert-icon">⚠️</span>
@@ -111,6 +130,7 @@
           <div class="card-face card-front">
             <div class="card-header">
               <span class="badge-category" id="card-category">YDS / AKADEMİK</span>
+              <span class="badge-consolidation" id="card-consolidation-badge">⚪ Yeni Kelime</span>
               <button class="btn-tts" id="btn-tts" title="Telaffuz Dinle">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
               </button>
@@ -157,6 +177,55 @@
             </div>
           </div>
 
+        </div>
+
+        <!-- 20 Kelimelik Set Tamamlama ve Pekiştirme Ekranı -->
+        <div class="set-completed-view" id="set-completed-view" style="display: none;">
+          <div class="completed-card-inner">
+            <div class="completed-badge-icon">🎉</div>
+            <h2 class="completed-title" id="completed-title">Set 1 / 5 Tamamlandı!</h2>
+            <p class="completed-sub" id="completed-sub">Bu setteki 20 kelime başarıyla tamamlandı.</p>
+            
+            <div class="completed-consolidation-box">
+              <div class="cons-box-header">
+                <span class="cons-box-icon">⚠️</span>
+                <strong>Bilimsel Hafıza & Pekiştirme Kuralı</strong>
+              </div>
+              <p class="cons-box-text">
+                Kelimeler test çözülmeden <strong>tam pekiştirilmiş</strong> sayılmaz! Zihninde kalıcı hale getirmek için bu 20 kelimenin testini çözmelisin.
+              </p>
+              <div class="cons-stats-chips" id="completed-set-stats">
+                <span class="cons-stat-chip chip-consolidated" id="completed-stat-cons">👑 0 Pekiştirildi</span>
+                <span class="cons-stat-chip chip-pending" id="completed-stat-pending">🟡 20 Test Bekliyor</span>
+              </div>
+            </div>
+
+            <div class="completed-actions-list">
+              <button class="btn-completed-act btn-act-quiz" id="btn-comp-quiz">
+                <span class="act-icon">🎯</span>
+                <div class="act-text">
+                  <strong>Bu 20 Kelimenin Testini Çöz</strong>
+                  <small>Kelimeleri tam pekiştirmek için testi başlat</small>
+                </div>
+              </button>
+
+              <button class="btn-completed-act btn-act-next" id="btn-comp-next">
+                <span class="act-icon">➔</span>
+                <div class="act-text">
+                  <strong id="btn-comp-next-title">Sonraki 20 Kelimeye Geç (Set 2)</strong>
+                  <small id="btn-comp-next-sub">Kelimeler 21 - 40</small>
+                </div>
+              </button>
+
+              <button class="btn-completed-act btn-act-repeat" id="btn-comp-repeat">
+                <span class="act-icon">🔄</span>
+                <div class="act-text">
+                  <strong>Bu 20 Kelimeyi Baştan Çalış</strong>
+                  <small>Aynı seti tekrar gözden geçir</small>
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -613,6 +682,15 @@
           <p class="result-score-text" id="result-score-text">%80 Doğruluk • 8 Doğru, 2 Yanlış</p>
           <div class="result-xp-chip" id="result-xp-chip">+120 XP Kazandın! ⚡</div>
 
+          <!-- Pekiştirilen Kelimeler Kutusu -->
+          <div class="quiz-consolidated-box" id="quiz-consolidated-box" style="display: none;">
+            <div class="cons-box-icon">👑</div>
+            <div class="cons-box-info">
+              <strong id="quiz-consolidated-title">0 Kelime Pekiştirildi!</strong>
+              <p id="quiz-consolidated-desc">Test başarıyla tamamlandı ve kelimeler kalıcı hafızaya mühürlendi.</p>
+            </div>
+          </div>
+
           <!-- Testte Yanlış Yapılan Kelimeler (Zor Kelimeye Eklenenler) -->
           <div class="quiz-failed-section" id="quiz-failed-section">
             <div class="failed-section-title">
@@ -624,6 +702,9 @@
           </div>
 
           <div class="result-actions">
+            <button class="btn-quiz-next-set" id="btn-quiz-next-set" style="display: none;">
+              ➔ Sonraki 20 Kelime Setine Geç
+            </button>
             <button class="btn-start-hard-from-quiz" id="btn-start-hard-from-quiz">
               🔥 Bu Zor Kelimeleri Şimdi Çalış
             </button>

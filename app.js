@@ -227,7 +227,7 @@ class ProgressManager {
       const now = Date.now();
       const oneDay = 24 * 3600 * 1000;
 
-      // 1. Detrimental (Zor kelime - lapse var)
+      // 1. Detrimental (Zor kelime - lapse var, test bekliyor)
       this.data['w_1'] = {
         repetitions: 1,
         boxLevel: 1,
@@ -235,11 +235,16 @@ class ProgressManager {
         interval: 1,
         lapses: 2,
         consecutiveCorrect: 0,
+        isConsolidated: false,
+        testPassed: false,
+        testCorrectCount: 0,
+        testWrongCount: 2,
+        status: 'hard',
         lastReviewedAt: new Date(now - oneDay * 3).toISOString(),
         nextReviewAt: new Date(now - oneDay).toISOString() // Süresi geçmiş
       };
 
-      // 2. Ambiguous (Tekrarı gelmiş)
+      // 2. Ambiguous (Tekrarı gelmiş, test bekliyor)
       this.data['w_2'] = {
         repetitions: 2,
         boxLevel: 2,
@@ -247,6 +252,11 @@ class ProgressManager {
         interval: 3,
         lapses: 1,
         consecutiveCorrect: 1,
+        isConsolidated: false,
+        testPassed: false,
+        testCorrectCount: 0,
+        testWrongCount: 0,
+        status: 'test_pending',
         lastReviewedAt: new Date(now - oneDay * 4).toISOString(),
         nextReviewAt: new Date(now - oneDay).toISOString() // Süresi geçmiş
       };
@@ -259,11 +269,16 @@ class ProgressManager {
         interval: 1,
         lapses: 3,
         consecutiveCorrect: 0,
+        isConsolidated: false,
+        testPassed: false,
+        testCorrectCount: 0,
+        testWrongCount: 3,
+        status: 'hard',
         lastReviewedAt: new Date(now - oneDay * 2).toISOString(),
         nextReviewAt: new Date(now - oneDay).toISOString()
       };
 
-      // 4. Vulnerable (Usta seviyesi)
+      // 4. Vulnerable (Testi çözülmüş ve tam pekiştirilmiş)
       this.data['w_4'] = {
         repetitions: 4,
         boxLevel: 4,
@@ -271,11 +286,16 @@ class ProgressManager {
         interval: 14,
         lapses: 0,
         consecutiveCorrect: 4,
+        isConsolidated: true, // Test çözülerek pekiştirildi
+        testPassed: true,
+        testCorrectCount: 2,
+        testWrongCount: 0,
+        status: 'consolidated',
         lastReviewedAt: new Date(now - oneDay * 1).toISOString(),
         nextReviewAt: new Date(now + oneDay * 13).toISOString()
       };
 
-      // 5. Plausible (Öğrenilmekte)
+      // 5. Plausible (Öğrenilmekte, test bekliyor)
       this.data['w_5'] = {
         repetitions: 2,
         boxLevel: 2,
@@ -283,6 +303,11 @@ class ProgressManager {
         interval: 4,
         lapses: 0,
         consecutiveCorrect: 2,
+        isConsolidated: false,
+        testPassed: false,
+        testCorrectCount: 0,
+        testWrongCount: 0,
+        status: 'test_pending',
         lastReviewedAt: new Date(now - oneDay * 2).toISOString(),
         nextReviewAt: new Date(now + oneDay * 2).toISOString()
       };
@@ -290,6 +315,9 @@ class ProgressManager {
       this.save();
     }
   }
+
+  // 4 saatlik minimum hafıza soğuma süresi
+  static COOLDOWN_MS = 4 * 3600 * 1000;
 
   getWordProgress(wordId) {
     return this.data[wordId] || {
@@ -299,8 +327,103 @@ class ProgressManager {
       interval: 0,
       lapses: 0,
       consecutiveCorrect: 0,
+      isConsolidated: false, // Yalnızca test çözülerek pekiştirilebilir
+      testPassed: false,
+      testCorrectCount: 0,
+      testWrongCount: 0,
       lastReviewedAt: null,
       nextReviewAt: null
+    };
+  }
+
+  // Kelime soğuma süresinde mi? (Son çalışma üzerinden 4 saat geçmemişse)
+  isWordOnCooldown(wordId) {
+    const p = this.getWordProgress(wordId);
+    if (!p.lastReviewedAt) return false;
+    const elapsed = Date.now() - new Date(p.lastReviewedAt).getTime();
+    return elapsed < ProgressManager.COOLDOWN_MS;
+  }
+
+  // Kalan soğuma süresi metni (örn: "45 dk", "2 sa 15 dk")
+  getCooldownRemaining(wordId) {
+    const p = this.getWordProgress(wordId);
+    if (!p.lastReviewedAt) return null;
+    const elapsed = Date.now() - new Date(p.lastReviewedAt).getTime();
+    const remainingMs = ProgressManager.COOLDOWN_MS - elapsed;
+    if (remainingMs <= 0) return null;
+    const mins = Math.ceil(remainingMs / (60 * 1000));
+    if (mins < 60) return `${mins} dk`;
+    const hours = Math.floor(mins / 60);
+    const remMins = mins % 60;
+    return remMins > 0 ? `${hours} sa ${remMins} dk` : `${hours} sa`;
+  }
+
+  // Dinamik Zaman ve Unutma Eğrisine Dayalı XP Hesaplayıcı:
+  // Yakın zamanda tekrar edilirse az/0 XP, uzun süre sonra hatırlanırsa çok daha fazla XP
+  calculateStudyXp(wordId, choiceType) {
+    const p = this.getWordProgress(wordId);
+    
+    // İlk defa çalışılıyorsa:
+    if (!p.lastReviewedAt) {
+      const base = choiceType === 'alreadyKnown' ? 3 : 2;
+      return {
+        earnedXp: base,
+        tier: 'first_time',
+        message: choiceType === 'alreadyKnown'
+          ? `⭐ Zaten Biliyordun! (+${base} XP) • Pekiştirmek için testini çözmelisin.`
+          : `🌱 Yeni Kelime Öğrenildi! (+${base} XP) • Pekiştirmek için testini çözmelisin.`
+      };
+    }
+
+    const elapsedMs = Date.now() - new Date(p.lastReviewedAt).getTime();
+    const elapsedMins = elapsedMs / (60 * 1000);
+    const elapsedHours = elapsedMs / (3600 * 1000);
+    const elapsedDays = elapsedHours / 24;
+
+    // 1. Çok yakın zaman (< 30 dakika): 0 XP
+    if (elapsedMins < 30) {
+      return {
+        earnedXp: 0,
+        tier: 'spam_cooldown',
+        message: `⏳ Çok yakın zamanda çalışıldı (+0 XP • Soğuma Koruması)`
+      };
+    }
+
+    // 2. Erken tekrar (30 dk - 4 saat): 1 XP
+    if (elapsedHours < 4) {
+      return {
+        earnedXp: 1,
+        tier: 'early_review',
+        message: `⏱️ Erken tekrar edildi (+1 XP • Hafıza soğuma aşamasında)`
+      };
+    }
+
+    // 3. Normal zaman aralığı (4 saat - 24 saat): 2 XP veya 3 XP
+    if (elapsedDays < 1) {
+      const base = choiceType === 'alreadyKnown' ? 3 : 2;
+      return {
+        earnedXp: base,
+        tier: 'normal',
+        message: choiceType === 'alreadyKnown'
+          ? `⭐ Bilgi tazelendi (+${base} XP)`
+          : `🌱 Planlı aralıklı tekrar yapıldı (+${base} XP)`
+      };
+    }
+
+    // 4. Aradan 1 - 3 gün geçmişse: +5 XP (Hafıza Zamanlama Bonusu!)
+    if (elapsedDays <= 3) {
+      return {
+        earnedXp: 5,
+        tier: 'spaced_bonus',
+        message: `⏰ Mükemmel Zamanlama! Uzun süre sonra hatırlandı (+5 XP)`
+      };
+    }
+
+    // 5. Aradan 3 günden fazla geçmişse: +8 XP (Ebbinghaus Unutma Eşiği Bonusu!)
+    return {
+      earnedXp: 8,
+      tier: 'ebbinghaus_master_bonus',
+      message: `⚡ Ebbinghaus Bonusu! Unutma eşiğindeki kelimeyi hatırladın (+8 XP)`
     };
   }
 
@@ -336,6 +459,10 @@ class ProgressManager {
       interval: sm2Result.interval,
       lapses: lapses,
       consecutiveCorrect: consecutive,
+      isConsolidated: current.isConsolidated || false,
+      testPassed: current.testPassed || false,
+      testCorrectCount: current.testCorrectCount || 0,
+      testWrongCount: current.testWrongCount || 0,
       lastReviewedAt: now.toISOString(),
       nextReviewAt: nextReview.toISOString()
     };
@@ -343,9 +470,11 @@ class ProgressManager {
   }
 
   // 1. "ÖĞRENDİM" Aksiyonu: Kelimeyi Ebbinghaus aralıklı tekrar döngüsüne alır
+  // ÖNEMLİ KURAL: Test çözülmeden kelime asla tam pekiştirilmiş sayılmaz!
   recordLearned(wordId) {
     const current = this.getWordProgress(wordId);
     const now = new Date();
+    const xpInfo = this.calculateStudyXp(wordId, 'learned');
     const newRep = (current.repetitions || 0) + 1;
     let newInterval = 1;
     if (newRep === 1) newInterval = 1;
@@ -362,18 +491,23 @@ class ProgressManager {
       lapses: current.lapses || 0,
       consecutiveCorrect: (current.consecutiveCorrect || 0) + 1,
       isAlreadyKnown: false,
-      status: 'learning',
+      isConsolidated: current.isConsolidated || false, // Asla sadece kartla tam pekişmez!
+      testPassed: current.testPassed || false,
+      testCorrectCount: current.testCorrectCount || 0,
+      testWrongCount: current.testWrongCount || 0,
+      status: current.isConsolidated ? 'consolidated' : 'test_pending',
       lastReviewedAt: now.toISOString(),
       nextReviewAt: nextReview.toISOString()
     };
     this.save();
-    return { interval: newInterval, earnedXp: 2 };
+    return { interval: newInterval, earnedXp: xpInfo.earnedXp, message: xpInfo.message };
   }
 
-  // 2. "ZATEN BİLİYORDUM" Aksiyonu: Kelimeyi doğrudan Usta / Kalıcı Hafıza seviyesine aktarır
+  // 2. "ZATEN BİLİYORDUM" Aksiyonu: Kelimeyi Usta seviyesine aktarır ancak test çözülmeden pekiştirilmiş sayılmaz
   recordAlreadyKnown(wordId) {
     const current = this.getWordProgress(wordId);
     const now = new Date();
+    const xpInfo = this.calculateStudyXp(wordId, 'alreadyKnown');
     const nextReview = new Date(now.getTime() + 30 * 24 * 3600 * 1000);
 
     this.data[wordId] = {
@@ -384,12 +518,16 @@ class ProgressManager {
       lapses: 0,
       consecutiveCorrect: Math.max(3, (current.consecutiveCorrect || 0) + 1),
       isAlreadyKnown: true,
-      status: 'mastered',
+      isConsolidated: current.isConsolidated || false, // Asla sadece kartla tam pekişmez!
+      testPassed: current.testPassed || false,
+      testCorrectCount: current.testCorrectCount || 0,
+      testWrongCount: current.testWrongCount || 0,
+      status: current.isConsolidated ? 'consolidated' : 'test_pending',
       lastReviewedAt: now.toISOString(),
       nextReviewAt: nextReview.toISOString()
     };
     this.save();
-    return { interval: 30, earnedXp: 3 };
+    return { interval: 30, earnedXp: xpInfo.earnedXp, message: xpInfo.message };
   }
 }
 
@@ -401,6 +539,7 @@ class AnkorisSession {
     this.mode = 'UNITS'; // 'UNITS', 'HARD', 'REVIEW'
     this.selectedUnitIds = new Set([1]); // Varsayılan: Ünite 1
     this.wordLimit = 20;
+    this.currentSetIndex = 1; // 1'den başlar (Her ünite 20'şerlik 5 set)
     this.activeDeck = [];
     this.currentIndex = 0;
     this.isFlipped = false;
@@ -408,7 +547,22 @@ class AnkorisSession {
     this.searchQuery = '';
   }
 
-  // Modlara göre akıllı deste oluşturma
+  getUnitWords() {
+    const allWords = (typeof ANKORIS_WORDS !== 'undefined') ? ANKORIS_WORDS : [];
+    let filtered = allWords.filter(w => this.selectedUnitIds.has(w.unit_id));
+    if (filtered.length === 0 && allWords.length > 0) {
+      filtered = allWords.filter(w => w.unit_id === 1);
+      this.selectedUnitIds = new Set([1]);
+    }
+    return filtered;
+  }
+
+  getTotalSets() {
+    const words = this.getUnitWords();
+    return Math.max(1, Math.ceil(words.length / 20));
+  }
+
+  // Modlara göre akıllı deste oluşturma (20 Kelimelik Setler)
   buildDeck() {
     const allWords = (typeof ANKORIS_WORDS !== 'undefined') ? ANKORIS_WORDS : [];
 
@@ -439,28 +593,56 @@ class AnkorisSession {
       });
       this.activeDeck = reviewPool.slice(0, this.wordLimit);
     } else {
-      // 3. ÜNİTE BAZLI STANDART ÇALIŞMA
-      let filtered = allWords.filter(w => this.selectedUnitIds.has(w.unit_id));
-      if (filtered.length === 0 && allWords.length > 0) {
-        filtered = allWords.filter(w => w.unit_id === 1);
-        this.selectedUnitIds = new Set([1]);
-      }
-      // Ünite içinde unutma riski olanları en başa getir (Akıllı Sıralama)
-      filtered.sort((a, b) => {
-        const pa = progressMgr.getWordProgress(a.id);
-        const pb = progressMgr.getWordProgress(b.id);
-        const isDueA = progressMgr.isDue(pa);
-        const isDueB = progressMgr.isDue(pb);
-        if (isDueA && !isDueB) return -1;
-        if (!isDueA && isDueB) return 1;
-        return 0;
-      });
-      this.activeDeck = filtered.slice(0, this.wordLimit);
+      // 3. ÜNİTE BAZLI 20 KELİMELİK SET MODU
+      const unitWords = this.getUnitWords();
+      const totalSets = this.getTotalSets();
+      if (this.currentSetIndex > totalSets) this.currentSetIndex = totalSets;
+      if (this.currentSetIndex < 1) this.currentSetIndex = 1;
+
+      const startIdx = (this.currentSetIndex - 1) * 20;
+      const endIdx = startIdx + 20;
+      this.activeDeck = unitWords.slice(startIdx, endIdx);
     }
 
     this.currentIndex = 0;
     this.isFlipped = false;
     return this.activeDeck;
+  }
+
+  nextSet() {
+    const totalSets = this.getTotalSets();
+    if (this.currentSetIndex < totalSets) {
+      this.currentSetIndex++;
+      this.buildDeck();
+      return true;
+    } else {
+      // Son sete ulaşıldıysa, bir sonraki üniteye geç
+      const currentUnitId = Array.from(this.selectedUnitIds)[0] || 1;
+      const nextUnitId = currentUnitId < 50 ? currentUnitId + 1 : 1;
+      this.selectedUnitIds = new Set([nextUnitId]);
+      this.currentSetIndex = 1;
+      this.buildDeck();
+      return true;
+    }
+  }
+
+  prevSet() {
+    if (this.currentSetIndex > 1) {
+      this.currentSetIndex--;
+      this.buildDeck();
+      return true;
+    }
+    return false;
+  }
+
+  goToSet(setIdx) {
+    const totalSets = this.getTotalSets();
+    if (setIdx >= 1 && setIdx <= totalSets) {
+      this.currentSetIndex = setIdx;
+      this.buildDeck();
+      return true;
+    }
+    return false;
   }
 
   currentCard() {
@@ -521,6 +703,14 @@ const currentUnitIconEl = document.getElementById('current-unit-icon');
 const currentUnitTitleEl = document.getElementById('current-unit-title');
 const currentUnitSubEl = document.getElementById('current-unit-sub');
 
+// 20 Kelimelik Set Barı Elementleri
+const unitSetBar = document.getElementById('unit-set-bar');
+const btnPrevSet = document.getElementById('btn-prev-set');
+const btnNextSet = document.getElementById('btn-next-set');
+const setInfoTitle = document.getElementById('set-info-title');
+const setInfoRange = document.getElementById('set-info-range');
+const setPillsRow = document.getElementById('set-pills-row');
+
 const priorityAlertBox = document.getElementById('priority-alert-box');
 const alertSummaryEl = document.getElementById('alert-summary');
 const btnQuickSmartReview = document.getElementById('btn-quick-smart-review');
@@ -540,11 +730,24 @@ const wordEl = document.getElementById('card-word');
 const phoneticEl = document.getElementById('card-phonetic');
 const posEl = document.getElementById('card-pos');
 const categoryEl = document.getElementById('card-category');
+const cardConsolidationBadge = document.getElementById('card-consolidation-badge');
 const meaningEl = document.getElementById('card-meaning');
 const mnemonicEl = document.getElementById('card-mnemonic');
 const exampleEnEl = document.getElementById('card-example-en');
 const exampleTrEl = document.getElementById('card-example-tr');
 const sm2StatsEl = document.getElementById('sm2-stats-text');
+
+// 20 Kelimelik Set Tamamlama Ekranı Elementleri
+const setCompletedView = document.getElementById('set-completed-view');
+const completedTitle = document.getElementById('completed-title');
+const completedSub = document.getElementById('completed-sub');
+const completedStatCons = document.getElementById('completed-stat-cons');
+const completedStatPending = document.getElementById('completed-stat-pending');
+const btnCompQuiz = document.getElementById('btn-comp-quiz');
+const btnCompNext = document.getElementById('btn-comp-next');
+const btnCompNextTitle = document.getElementById('btn-comp-next-title');
+const btnCompNextSub = document.getElementById('btn-comp-next-sub');
+const btnCompRepeat = document.getElementById('btn-comp-repeat');
 
 const toastEl = document.getElementById('toast');
 
@@ -592,6 +795,58 @@ function updateUI() {
   btnModeHard.classList.toggle('active', session.mode === 'HARD');
   btnModeReview.classList.toggle('active', session.mode === 'REVIEW');
 
+  // 20 Kelimelik Set Barı Yönetimi
+  if (session.mode === 'UNITS' && unitSetBar) {
+    unitSetBar.style.display = 'flex';
+    const totalSets = session.getTotalSets();
+    const curSet = session.currentSetIndex;
+    const unitWords = session.getUnitWords();
+
+    if (setInfoTitle) setInfoTitle.textContent = `Set ${curSet} / ${totalSets}`;
+    if (setInfoRange) {
+      const startNum = (curSet - 1) * 20 + 1;
+      const endNum = Math.min(startNum + 19, unitWords.length);
+      setInfoRange.textContent = `(${startNum} - ${endNum}. Kelimeler)`;
+    }
+
+    if (setPillsRow) {
+      setPillsRow.innerHTML = '';
+      for (let i = 1; i <= totalSets; i++) {
+        const sWords = unitWords.slice((i - 1) * 20, i * 20);
+        let cons = 0;
+        let studied = 0;
+        sWords.forEach(w => {
+          const prog = progressMgr.getWordProgress(w.id);
+          if (prog.isConsolidated) cons++;
+          if (prog.repetitions >= 1) studied++;
+        });
+
+        const pill = document.createElement('button');
+        pill.className = `set-pill-btn ${i === curSet ? 'active' : ''}`;
+        let statusText = `${cons}/${sWords.length}`;
+        let statusClass = 'pending';
+        if (cons === sWords.length && sWords.length > 0) {
+          statusText = '👑 Tam';
+          statusClass = 'done';
+        } else if (studied === sWords.length && sWords.length > 0) {
+          statusText = '🟡 Test';
+          statusClass = 'pending';
+        }
+        pill.innerHTML = `
+          <span>Set ${i}</span>
+          <span class="set-pill-status ${statusClass}">${statusText}</span>
+        `;
+        pill.addEventListener('click', () => {
+          session.goToSet(i);
+          updateUI();
+        });
+        setPillsRow.appendChild(pill);
+      }
+    }
+  } else if (unitSetBar) {
+    unitSetBar.style.display = 'none';
+  }
+
   // Aktif Ünite Başlığı
   if (session.mode === 'HARD') {
     currentUnitIconEl.textContent = '🔥';
@@ -603,45 +858,74 @@ function updateUI() {
     currentUnitSubEl.textContent = `Zaman Aşımına Uğramış ${session.activeDeck.length} Kelime`;
   } else {
     const count = session.selectedUnitIds.size;
+    const totalSets = session.getTotalSets();
     if (count === 1) {
       const uId = Array.from(session.selectedUnitIds)[0];
       const uObj = (typeof ANKORIS_UNITS !== 'undefined') ? ANKORIS_UNITS.find(u => u.id === uId) : null;
       currentUnitIconEl.textContent = uObj ? uObj.icon : '📚';
       currentUnitTitleEl.textContent = uObj ? uObj.title : `Ünite ${uId}`;
-      currentUnitSubEl.textContent = `Seçili: 1 Ünite (${session.activeDeck.length} Kelime)`;
+      currentUnitSubEl.textContent = `Ünite ${uId} • Set ${session.currentSetIndex}/${totalSets} (${session.activeDeck.length} Kelime)`;
     } else if (count >= 50) {
       currentUnitIconEl.textContent = '💎';
       currentUnitTitleEl.textContent = 'Tüm Üniteler (50 Ünite)';
-      currentUnitSubEl.textContent = `Toplam ${session.activeDeck.length} Kelime Destede`;
+      currentUnitSubEl.textContent = `Set ${session.currentSetIndex}/${totalSets} (${session.activeDeck.length} Kelime)`;
     } else {
       currentUnitIconEl.textContent = '📚';
       currentUnitTitleEl.textContent = `Özel Seans: ${count} Ünite`;
-      currentUnitSubEl.textContent = `${session.activeDeck.length} Kelimelik Deste`;
+      currentUnitSubEl.textContent = `Set ${session.currentSetIndex}/${totalSets} (${session.activeDeck.length} Kelime)`;
     }
   }
 
   // İlerleme & Hedef
-  const remaining = session.activeDeck.length - session.currentIndex;
+  const remaining = Math.max(0, session.activeDeck.length - session.currentIndex);
   remainingCountEl.textContent = `${remaining} Kart Kaldı`;
   dailyGoalTextEl.textContent = `Hedef: ${user.dailyReviewed}/${user.dailyTarget}`;
   const pct = Math.min(100, Math.round((user.dailyReviewed / user.dailyTarget) * 100));
   dailyProgressFillEl.style.width = `${pct}%`;
 
-  // Kart İçeriği
+  // Kart İçeriği veya Set Tamamlama Ekranı
   const card = session.currentCard();
   if (!card) {
     showCompletedView();
     return;
   }
 
+  if (cardEl) cardEl.style.display = '';
+  if (setCompletedView) setCompletedView.style.display = 'none';
+
   const p = progressMgr.getWordProgress(card.id);
   const ret = progressMgr.getRetention(p);
   const isHardWord = progressMgr.isHard(p);
+  const isOnCooldown = progressMgr.isWordOnCooldown(card.id);
+  const cooldownRem = progressMgr.getCooldownRemaining(card.id);
 
   wordEl.textContent = card.english;
   phoneticEl.textContent = card.phonetic;
   posEl.textContent = card.pos;
   categoryEl.textContent = (isHardWord ? '🔥 ZOR KELİME • ' : '') + card.category.replace('_', ' ');
+
+  // Pekiştirme & Soğuma Durumu Rozeti
+  if (cardConsolidationBadge) {
+    if (p.isConsolidated) {
+      cardConsolidationBadge.textContent = '👑 Pekiştirildi';
+      cardConsolidationBadge.className = 'badge-consolidation status-consolidated';
+      cardConsolidationBadge.title = 'Testi çözüldü ve kalıcı hafızaya mühürlendi';
+    } else if (p.repetitions >= 1) {
+      if (isOnCooldown) {
+        cardConsolidationBadge.textContent = `⏳ Soğuma: ${cooldownRem}`;
+        cardConsolidationBadge.className = 'badge-consolidation status-cooldown';
+        cardConsolidationBadge.title = 'Hafıza pekişme soğumasında (tekrar koruması)';
+      } else {
+        cardConsolidationBadge.textContent = '🟡 Test Bekliyor';
+        cardConsolidationBadge.className = 'badge-consolidation status-pending';
+        cardConsolidationBadge.title = 'Çalışıldı ancak testi çözülmeden tam pekiştirilmiş sayılmaz';
+      }
+    } else {
+      cardConsolidationBadge.textContent = '⚪ Yeni Kelime';
+      cardConsolidationBadge.className = 'badge-consolidation status-new';
+      cardConsolidationBadge.title = 'Henüz çalışılmadı';
+    }
+  }
 
   meaningEl.textContent = card.turkish;
   mnemonicEl.textContent = card.mnemonic;
@@ -650,22 +934,79 @@ function updateUI() {
 
   let retText = p.lastReviewedAt ? ` • Kalıcılık: %${Math.round(ret * 100)}` : '';
   let lapseText = p.lapses > 0 ? ` • ${p.lapses} Kez Unutuldu` : '';
-  sm2StatsEl.textContent = `SM-2: ${p.repetitions} Tekrar • EF: ${p.easeFactor.toFixed(2)}${lapseText}${retText}`;
+  let consText = p.isConsolidated 
+    ? ' • <span style="color:#00F5A0; font-weight:700;">👑 Tam Pekiştirildi</span>' 
+    : (p.repetitions >= 1 ? ' • <span style="color:#FFB142; font-weight:700;">🟡 Test Bekliyor (Henüz Pekiştirilmedi)</span>' : '');
+
+  let cooldownNotice = '';
+  if (isOnCooldown) {
+    cooldownNotice = `<div class="cooldown-notice-box">⏳ <strong>Soğuma Koruması (Kalan: ${cooldownRem}):</strong> Yakın zamanda çalışıldı. Belirli bir zaman geçmeden tekrar çalıştığında 0 XP verir.</div>`;
+  } else if (p.lastReviewedAt) {
+    const xpPreview = progressMgr.calculateStudyXp(card.id, 'learned');
+    cooldownNotice = `<div class="xp-reward-preview-box">⚡ <strong>Zamanlama Bonusu:</strong> Aradan zaman geçti! Şimdi çalışırsan <strong>+${xpPreview.earnedXp} XP</strong> kazandırır!</div>`;
+  }
+
+  sm2StatsEl.innerHTML = `SM-2: ${p.repetitions} Tekrar • EF: ${p.easeFactor.toFixed(2)}${lapseText}${retText}${consText}${cooldownNotice}`;
+
+  // Alt Butonlardaki Dinamik XP Önizlemeleri
+  const xpLearned = progressMgr.calculateStudyXp(card.id, 'learned');
+  const xpKnown = progressMgr.calculateStudyXp(card.id, 'alreadyKnown');
+  const subLearned = btnSrsLearned ? btnSrsLearned.querySelector('.choice-sub-desc') : null;
+  const subKnown = btnSrsAlreadyKnown ? btnSrsAlreadyKnown.querySelector('.choice-sub-desc') : null;
+
+  if (subLearned) {
+    subLearned.textContent = isOnCooldown 
+      ? 'Soğuma koruması • 0 XP' 
+      : (xpLearned.earnedXp > 2 ? `⏰ Hafıza bonusu • +${xpLearned.earnedXp} XP` : `Döngüye al • +${xpLearned.earnedXp} XP`);
+  }
+  if (subKnown) {
+    subKnown.textContent = isOnCooldown 
+      ? 'Soğuma koruması • 0 XP' 
+      : (xpKnown.earnedXp > 3 ? `⏰ Hafıza bonusu • +${xpKnown.earnedXp} XP` : `Usta seviyesine aktar • +${xpKnown.earnedXp} XP`);
+  }
 
   cardEl.classList.remove('flipped');
   session.isFlipped = false;
 }
 
 function showCompletedView() {
-  cardEl.classList.remove('flipped');
-  wordEl.textContent = 'Harika İş! 🚀';
-  phoneticEl.textContent = session.mode === 'HARD' ? 'Zor kelimeleri başarıyla pekiştirdin!' : 'Tüm seansı başarıyla tamamladın!';
-  posEl.textContent = 'Seans Bitti';
-  categoryEl.textContent = 'TEBRİKLER';
-  meaningEl.textContent = 'Tüm Kartlar Sabitlendi!';
+  if (cardEl) cardEl.style.display = 'none';
+  if (setCompletedView) {
+    setCompletedView.style.display = 'flex';
+    const totalSets = session.getTotalSets();
+    const curSet = session.currentSetIndex;
+
+    let consCount = 0;
+    let pendCount = 0;
+    session.activeDeck.forEach(w => {
+      const prog = progressMgr.getWordProgress(w.id);
+      if (prog.isConsolidated) consCount++;
+      else pendCount++;
+    });
+
+    if (completedTitle) completedTitle.textContent = `Set ${curSet} / ${totalSets} Tamamlandı! 🎉`;
+    if (completedSub) completedSub.textContent = `Bu setteki ${session.activeDeck.length} kelimeyi gözden geçirdin.`;
+    if (completedStatCons) completedStatCons.textContent = `👑 ${consCount} Pekiştirildi`;
+    if (completedStatPending) completedStatPending.textContent = `🟡 ${pendCount} Test Bekliyor`;
+
+    if (btnCompNextTitle && btnCompNextSub) {
+      if (curSet < totalSets) {
+        btnCompNextTitle.textContent = `Sonraki 20 Kelimeye Geç (Set ${curSet + 1}) ➔`;
+        const startNext = (curSet * 20) + 1;
+        const endNext = Math.min((curSet + 1) * 20, session.getUnitWords().length);
+        btnCompNextSub.textContent = `Kelimeler ${startNext} - ${endNext}`;
+      } else {
+        const uId = Array.from(session.selectedUnitIds)[0] || 1;
+        const nextU = uId < 50 ? uId + 1 : 1;
+        btnCompNextTitle.textContent = `Sonraki Üniteye Geç (Ünite ${nextU}) ➔`;
+        btnCompNextSub.textContent = 'Yeni üniteye başla';
+      }
+    }
+  }
+
   remainingCountEl.textContent = '0 Kart Kaldı';
   triggerConfetti();
-  showToast('🏆 Seans tamamlandı! Bir sonraki hedefe hazırsın.');
+  showToast('🏆 20 Kelimelik Set Tamamlandı! Pekiştirmek için test çözebilirsin.');
 }
 
 function flipCard() {
@@ -698,11 +1039,11 @@ function rateKnowledgeChoice(choiceType) {
 
   if (choiceType === 'alreadyKnown') {
     result = progressMgr.recordAlreadyKnown(card.id);
-    showToast(`⭐ Zaten Biliyordun! Usta Seviyesine Aktarıldı (+${result.earnedXp} XP)`);
   } else {
     result = progressMgr.recordLearned(card.id);
-    showToast(`🌱 Öğrendin! Aralıklı Tekrar Döngüsüne Eklendi (+${result.earnedXp} XP)`);
   }
+
+  showToast(result.message);
 
   // XP & Oyunlaştırma
   user.xp += result.earnedXp;
@@ -732,6 +1073,41 @@ function rateKnowledgeChoice(choiceType) {
 
   session.currentIndex++;
   updateUI();
+}
+
+// 20 Kelimelik Set Yönlendirmeleri
+if (btnPrevSet) {
+  btnPrevSet.addEventListener('click', () => {
+    session.prevSet();
+    updateUI();
+  });
+}
+
+if (btnNextSet) {
+  btnNextSet.addEventListener('click', () => {
+    session.nextSet();
+    updateUI();
+  });
+}
+
+if (btnCompQuiz) {
+  btnCompQuiz.addEventListener('click', () => {
+    openQuizModal(session.activeDeck);
+  });
+}
+
+if (btnCompNext) {
+  btnCompNext.addEventListener('click', () => {
+    session.nextSet();
+    updateUI();
+  });
+}
+
+if (btnCompRepeat) {
+  btnCompRepeat.addEventListener('click', () => {
+    session.currentIndex = 0;
+    updateUI();
+  });
 }
 
 // Buton Etkinlikleri: "Öğrendim" & "Zaten Biliyordum"
@@ -831,30 +1207,56 @@ class QuizManager {
     this.wrongCount = 0;
     this.earnedXp = 0;
     this.failedWords = [];
+    this.newlyConsolidatedCount = 0;
     this.isAnswering = false;
+    this.isSetQuiz = false;
   }
 
-  // Öğrenilen veya aktif ünitedeki kelimelerden 4 seçenekli test türetir
-  buildQuiz() {
+  // Öğrenilen veya aktif ünitedeki/setteki kelimelerden 4 seçenekli test türetir
+  buildQuiz(targetPool = null) {
     const allWords = (typeof ANKORIS_WORDS !== 'undefined') ? ANKORIS_WORDS : [];
+    this.newlyConsolidatedCount = 0;
     
-    // 1. Önce çalışılmış kelimeleri havuz yap
-    let pool = allWords.filter(w => {
-      const p = progressMgr.getWordProgress(w.id);
-      return p.repetitions >= 1 || p.lapses > 0;
-    });
+    let pool = [];
+    if (targetPool && targetPool.length > 0) {
+      this.isSetQuiz = true;
+      pool = [...targetPool];
+      // Testi çözülmemiş / pekişmemiş olanları önceliğe al
+      pool.sort((a, b) => {
+        const pa = progressMgr.getWordProgress(a.id);
+        const pb = progressMgr.getWordProgress(b.id);
+        if (!pa.isConsolidated && pb.isConsolidated) return -1;
+        if (pa.isConsolidated && !pb.isConsolidated) return 1;
+        return 0;
+      });
+    } else {
+      this.isSetQuiz = false;
+      // 1. Önce çalışılmış kelimeleri havuz yap (özellikle pekiştirme bekleyenleri öne al)
+      pool = allWords.filter(w => {
+        const p = progressMgr.getWordProgress(w.id);
+        return p.repetitions >= 1 || p.lapses > 0;
+      });
 
-    // Eğer çalışılmış kelime 4'ten az ise aktif destedeki kelimeleri de havuza ekle
-    if (pool.length < 5) {
-      pool = [...session.activeDeck];
-    }
-    if (pool.length < 4) {
-      pool = allWords.slice(0, 20);
+      pool.sort((a, b) => {
+        const pa = progressMgr.getWordProgress(a.id);
+        const pb = progressMgr.getWordProgress(b.id);
+        if (!pa.isConsolidated && pb.isConsolidated) return -1;
+        if (pa.isConsolidated && !pb.isConsolidated) return 1;
+        return (pb.lapses || 0) - (pa.lapses || 0);
+      });
+
+      // Eğer çalışılmış kelime 4'ten az ise aktif destedeki kelimeleri de havuza ekle
+      if (pool.length < 5) {
+        pool = [...session.activeDeck];
+      }
+      if (pool.length < 4) {
+        pool = allWords.slice(0, 20);
+      }
     }
 
-    // Karıştır ve 10 soru seç
-    const shuffled = [...pool].sort(() => 0.5 - Math.random());
-    const targetWords = shuffled.slice(0, 10);
+    // Sorulacak kelime adedi (Set testinde tüm 20'yi sorar)
+    const questionLimit = this.isSetQuiz ? Math.min(20, pool.length) : 10;
+    const targetWords = pool.slice(0, questionLimit);
 
     this.questions = targetWords.map(target => {
       // 3 Çeldirici seç
@@ -894,8 +1296,20 @@ class QuizManager {
 
 const quizMgr = new QuizManager();
 
-function openQuizModal() {
-  quizMgr.buildQuiz();
+function openQuizModal(targetPool = null) {
+  quizMgr.buildQuiz(targetPool);
+  const quizTitleEl = document.getElementById('quiz-title');
+  const quizSubtitleEl = document.getElementById('quiz-subtitle');
+  if (quizTitleEl && quizSubtitleEl) {
+    if (quizMgr.isSetQuiz) {
+      quizTitleEl.textContent = `Set ${session.currentSetIndex} Pekiştirme Testi (${quizMgr.questions.length} Soru)`;
+      quizSubtitleEl.textContent = `Bu testi doğru çözen kelimeler 'Tam Olarak Pekiştirildi' kabul edilir`;
+    } else {
+      quizTitleEl.textContent = `Kelime Değerlendirme Testi`;
+      quizSubtitleEl.textContent = `Doğru çözülen kelimeler tam pekiştirilir, yanlışlar Zor Kelimelere eklenir`;
+    }
+  }
+
   renderQuizQuestion();
   quizQuestionView.style.display = 'flex';
   quizResultView.style.display = 'none';
@@ -908,7 +1322,7 @@ function closeQuizModal() {
   updateUI();
 }
 
-btnModeQuiz.addEventListener('click', openQuizModal);
+btnModeQuiz.addEventListener('click', () => openQuizModal());
 btnCloseQuiz.addEventListener('click', closeQuizModal);
 
 function renderQuizQuestion() {
@@ -976,28 +1390,41 @@ function handleQuizOptionClick(selectedBtn, selectedText, question) {
     accountMgr.currentUser.xp += 5;
     accountMgr.save();
 
-    // Doğru cevaplandığında kelimenin zorluk durumu pekiştirilir
+    // DOĞRU CEVAPLANDI: Kelime TAM OLARAK PEKİŞTİRİLMİŞ SAYILIR!
+    const wasConsolidated = p.isConsolidated;
     p.testCorrectCount = (p.testCorrectCount || 0) + 1;
     p.consecutiveCorrect = (p.consecutiveCorrect || 0) + 1;
+    p.testPassed = true;
+    p.isConsolidated = true; // Test çözüldü ve tam pekişti!
+    p.status = 'consolidated';
+    p.consolidatedAt = new Date().toISOString();
     p.easeFactor = Math.min(3.0, (p.easeFactor || 2.50) + 0.05);
     progressMgr.data[targetWord.id] = p;
     progressMgr.save();
 
-    showToast('🎯 Doğru! +5 XP Kazandın');
+    if (!wasConsolidated) {
+      quizMgr.newlyConsolidatedCount = (quizMgr.newlyConsolidatedCount || 0) + 1;
+      showToast(`👑 Doğru! "${targetWord.english}" Başarıyla Pekiştirildi! (+5 XP)`);
+    } else {
+      showToast('🎯 Doğru! +5 XP Kazandın');
+    }
   } else {
-    // YANLIŞ CEVAPLANDI: Kelime anında "ZOR KELİME" havuzuna eklenir!
+    // YANLIŞ CEVAPLANDI: Kelime pekiştirilmemiş kabul edilir ve "ZOR KELİME" havuzuna eklenir!
     selectedBtn.classList.add('wrong');
     quizMgr.wrongCount++;
     quizMgr.failedWords.push(targetWord);
 
     p.lapses = (p.lapses || 0) + 1;
     p.testWrongCount = (p.testWrongCount || 0) + 1;
-    p.easeFactor = Math.max(1.30, (p.easeFactor || 2.50) - 0.20); // Zorluk katsayısı düşürülür
+    p.testPassed = false;
+    p.isConsolidated = false; // Testi geçemediği için pekiştirilmemiş
+    p.status = 'hard';
+    p.easeFactor = Math.max(1.30, (p.easeFactor || 2.50) - 0.20);
     p.consecutiveCorrect = 0;
     progressMgr.data[targetWord.id] = p;
     progressMgr.save();
 
-    showToast(`⚠️ Yanlış! "${targetWord.english}" Zor Kelimeler havuzuna eklendi.`);
+    showToast(`⚠️ Yanlış! "${targetWord.english}" Pekiştirilemedi ve Zor Kelimelere eklendi.`);
   }
 
   // İlerleme Butonunu Etkinleştir ve Güncelle
@@ -1035,6 +1462,31 @@ function showQuizResults() {
   resultScoreText.textContent = `%${accuracy} Doğruluk Oranı • ${quizMgr.correctCount} Doğru, ${quizMgr.wrongCount} Yanlış`;
   resultXpChip.textContent = `+${quizMgr.earnedXp} XP Kazandın! ⚡`;
 
+  // Pekiştirilen kelimeler kutusu
+  if (quizConsolidatedBox && quizConsolidatedTitle) {
+    if (quizMgr.newlyConsolidatedCount > 0) {
+      quizConsolidatedBox.style.display = 'flex';
+      quizConsolidatedTitle.textContent = `${quizMgr.newlyConsolidatedCount} Kelime Başarıyla Pekiştirildi! 👑`;
+    } else {
+      quizConsolidatedBox.style.display = 'none';
+    }
+  }
+
+  // Sonraki set butonu (Eğer set testi yapıldıysa)
+  if (btnQuizNextSet) {
+    if (quizMgr.isSetQuiz) {
+      btnQuizNextSet.style.display = 'block';
+      const totalSets = session.getTotalSets();
+      if (session.currentSetIndex < totalSets) {
+        btnQuizNextSet.textContent = `➔ Sonraki 20 Kelimeye Geç (Set ${session.currentSetIndex + 1})`;
+      } else {
+        btnQuizNextSet.textContent = `➔ Sonraki Üniteye Geç`;
+      }
+    } else {
+      btnQuizNextSet.style.display = 'none';
+    }
+  }
+
   // Yanlış cevaplanan kelimeleri listele
   failedWordsList.innerHTML = '';
   if (quizMgr.failedWords.length > 0) {
@@ -1056,13 +1508,21 @@ function showQuizResults() {
   updateUI();
 }
 
+if (btnQuizNextSet) {
+  btnQuizNextSet.addEventListener('click', () => {
+    closeQuizModal();
+    session.nextSet();
+    updateUI();
+  });
+}
+
 btnStartHardFromQuiz.addEventListener('click', () => {
   closeQuizModal();
   btnModeHard.click(); // Doğrudan zor kelimeler kliniğini başlat
 });
 
 btnRetakeQuiz.addEventListener('click', () => {
-  openQuizModal();
+  openQuizModal(quizMgr.isSetQuiz ? session.activeDeck : null);
 });
 
 // --- 8. ÜNİTE KÜTÜPHANESİ & İLERLEME / SEVİYE TAKİBİ MODALI ---
@@ -1089,31 +1549,32 @@ document.getElementById('btn-strip-open-units').addEventListener('click', openUn
 document.getElementById('btn-close-units').addEventListener('click', closeUnitsModal);
 
 // Her ünitenin ilerleme, seviye ve zor kelime istatistiklerini hesaplar
+// ÖNEMLİ KURAL: Test çözülmeden kelime asla tam pekiştirilmiş (Usta) sayılmaz!
 function getUnitStats(unitId) {
   const allWords = (typeof ANKORIS_WORDS !== 'undefined') ? ANKORIS_WORDS : [];
   const unitWords = allWords.filter(w => w.unit_id === unitId);
   const total = unitWords.length || 100;
   
-  let mastered = 0;
-  let learning = 0;
+  let mastered = 0; // Testi çözülüp TAM PEKİŞTİRİLENLER
+  let learning = 0; // Çalışılmış ancak henüz testi bekleyenler
   let hard = 0;
 
   unitWords.forEach(w => {
     const p = progressMgr.getWordProgress(w.id);
-    if (p.repetitions >= 3 && p.boxLevel >= 3) mastered++;
+    if (p.isConsolidated) mastered++;
     else if (p.repetitions >= 1) learning++;
     if (progressMgr.isHard(p)) hard++;
   });
 
   const studied = mastered + learning;
-  const pct = Math.round((studied / total) * 100);
+  const pct = Math.round((mastered / total) * 100);
 
   let levelName = '⚪ Başlanmadı';
   let levelClass = '';
   if (pct >= 80) { levelName = '👑 Usta'; levelClass = 'master'; }
   else if (pct >= 45) { levelName = '⭐ İleri'; levelClass = 'master'; }
   else if (pct >= 15) { levelName = '🌱 Gelişmekte'; levelClass = ''; }
-  else if (pct > 0) { levelName = '🔹 Başlangıç'; levelClass = ''; }
+  else if (studied > 0) { levelName = '🟡 Test Bekliyor'; levelClass = ''; }
 
   return { total, studied, mastered, learning, hard, pct, levelName, levelClass };
 }
@@ -1152,13 +1613,13 @@ function renderUnitsList() {
           <span class="unit-mastery-tag ${stats.levelClass}">${stats.levelName}</span>
         </div>
         <div class="unit-card-meta">
-          ${stats.studied}/${stats.total} Kelime Çalışıldı ${stats.hard > 0 ? `• <span style="color: #FF5252;">⚠️ ${stats.hard} Zor</span>` : ''}
+          ${stats.mastered}/${stats.total} Pekiştirildi • ${stats.learning} Test Bekliyor ${stats.hard > 0 ? `• <span style="color: #FF5252;">⚠️ ${stats.hard} Zor</span>` : ''}
         </div>
         <div class="unit-card-progress">
           <div class="unit-prog-track">
             <div class="unit-prog-fill" style="width: ${stats.pct}%;"></div>
           </div>
-          <span class="unit-prog-text">%${stats.pct}</span>
+          <span class="unit-prog-text">%${stats.pct} Pekiştirildi</span>
         </div>
       </div>
       <div class="unit-card-checkbox">${isSelected ? '✓' : ''}</div>
@@ -1242,10 +1703,11 @@ document.querySelectorAll('.limit-chip').forEach(chip => {
 
 document.getElementById('btn-start-session').addEventListener('click', () => {
   session.mode = 'UNITS';
+  session.currentSetIndex = 1;
   session.buildDeck();
   closeUnitsModal();
   updateUI();
-  showToast(`✅ ${session.selectedUnitIds.size} Ünite, ${session.activeDeck.length} Kelimelik Seans Başlatıldı!`);
+  showToast(`✅ ${session.selectedUnitIds.size} Ünite, Set 1 (${session.activeDeck.length} Kelime) Başlatıldı!`);
 });
 
 // --- 8.1. KÜTÜPHANE VE 5.000 KELİMELİK SÖZLÜK SEKMELERİ ---
@@ -1367,7 +1829,9 @@ function renderDictionaryList() {
   dictionaryWordsListEl.innerHTML = renderWords.map(w => {
     const p = progressMgr.getWordProgress(w.id);
     const isHard = progressMgr.isHard(p);
-    const isStudied = p.repetitions >= 1;
+    const isConsolidated = p.isConsolidated;
+    const isPending = p.repetitions >= 1 && !p.isConsolidated;
+    const isOnCooldown = progressMgr.isWordOnCooldown(w.id);
 
     return `
       <div class="dict-word-card" data-word-id="${w.id}">
@@ -1377,7 +1841,8 @@ function renderDictionaryList() {
             <span class="dict-word-phonetic">${w.phonetic || ''}</span>
             <span class="dict-word-pos">${w.pos || 'kelime'}</span>
             ${isHard ? '<span style="font-size: 10px; color: #FF5252; font-weight: 700;">🔥 Zor</span>' : ''}
-            ${isStudied ? '<span style="font-size: 10px; color: #00F5A0; font-weight: 700;">✓ Çalışıldı</span>' : ''}
+            ${isConsolidated ? '<span style="font-size: 10px; color: #00F5A0; font-weight: 700;">👑 Pekiştirildi</span>' : (isPending ? '<span style="font-size: 10px; color: #FFB142; font-weight: 700;">🟡 Test Bekliyor</span>' : '')}
+            ${isOnCooldown ? '<span style="font-size: 10px; color: #38BDF8; font-weight: 700;">⏳ Soğumada</span>' : ''}
           </div>
           <span class="dict-word-unit-badge">Ünite ${w.unit_id}</span>
         </div>
@@ -1512,7 +1977,7 @@ function renderProfileModal() {
 
   allWords.forEach(w => {
     const p = progressMgr.getWordProgress(w.id);
-    if (p.repetitions >= 3 && p.boxLevel >= 3) masteredCount++;
+    if (p.isConsolidated) masteredCount++;
     else if (p.repetitions >= 1) learningCount++;
     if (progressMgr.isHard(p)) hardCount++;
     if (p.lastReviewedAt && progressMgr.isDue(p)) dueCount++;
