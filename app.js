@@ -750,6 +750,16 @@ const btnCompNextSub = document.getElementById('btn-comp-next-sub');
 const btnCompRepeat = document.getElementById('btn-comp-repeat');
 
 const toastEl = document.getElementById('toast');
+let toastTimer = null;
+function showToast(msg) {
+  if (!toastEl) return;
+  clearTimeout(toastTimer);
+  toastEl.textContent = msg;
+  toastEl.classList.add('active');
+  toastTimer = setTimeout(() => {
+    toastEl.classList.remove('active');
+  }, 2200);
+}
 
 // --- 6. ARAYÜZ YENİLEME VE AKILLI BİLDİRİM MOTORU ---
 function updateUI() {
@@ -1197,6 +1207,7 @@ const failedWordsList = document.getElementById('failed-words-list');
 const btnStartHardFromQuiz = document.getElementById('btn-start-hard-from-quiz');
 const btnRetakeQuiz = document.getElementById('btn-retake-quiz');
 const btnQuizNext = document.getElementById('btn-quiz-next');
+const btnQuizNextSet = document.getElementById('btn-quiz-next-set');
 let quizAdvanceTimer = null;
 
 class QuizManager {
@@ -1516,14 +1527,18 @@ if (btnQuizNextSet) {
   });
 }
 
-btnStartHardFromQuiz.addEventListener('click', () => {
-  closeQuizModal();
-  btnModeHard.click(); // Doğrudan zor kelimeler kliniğini başlat
-});
+if (btnStartHardFromQuiz) {
+  btnStartHardFromQuiz.addEventListener('click', () => {
+    closeQuizModal();
+    btnModeHard.click(); // Doğrudan zor kelimeler kliniğini başlat
+  });
+}
 
-btnRetakeQuiz.addEventListener('click', () => {
-  openQuizModal(quizMgr.isSetQuiz ? session.activeDeck : null);
-});
+if (btnRetakeQuiz) {
+  btnRetakeQuiz.addEventListener('click', () => {
+    openQuizModal(quizMgr.isSetQuiz ? session.activeDeck : null);
+  });
+}
 
 // --- 8. ÜNİTE KÜTÜPHANESİ & İLERLEME / SEVİYE TAKİBİ MODALI ---
 const unitsBackdrop = document.getElementById('units-backdrop');
@@ -1532,6 +1547,9 @@ const selectedUnitsCountText = document.getElementById('selected-units-count-tex
 const btnStartText = document.getElementById('btn-start-text');
 
 function openUnitsModal(defaultTab = 'units') {
+  if (typeof defaultTab !== 'string') {
+    defaultTab = 'units';
+  }
   unitsBackdrop.classList.add('active');
   if (typeof switchLibraryTab === 'function') {
     switchLibraryTab(defaultTab);
@@ -1544,8 +1562,8 @@ function closeUnitsModal() {
   unitsBackdrop.classList.remove('active');
 }
 
-document.getElementById('btn-open-units').addEventListener('click', openUnitsModal);
-document.getElementById('btn-strip-open-units').addEventListener('click', openUnitsModal);
+document.getElementById('btn-open-units').addEventListener('click', () => openUnitsModal('units'));
+document.getElementById('btn-strip-open-units').addEventListener('click', () => openUnitsModal('units'));
 document.getElementById('btn-close-units').addEventListener('click', closeUnitsModal);
 
 // Her ünitenin ilerleme, seviye ve zor kelime istatistiklerini hesaplar
@@ -2264,16 +2282,6 @@ function updateConfetti() {
   if (alive) requestAnimationFrame(updateConfetti);
 }
 
-let toastTimer = null;
-function showToast(msg) {
-  clearTimeout(toastTimer);
-  toastEl.textContent = msg;
-  toastEl.classList.add('active');
-  toastTimer = setTimeout(() => {
-    toastEl.classList.remove('active');
-  }, 2200);
-}
-
 // Klavye Kısayolları (1: Öğrendim, 2: Zaten Biliyordum, Space: Çevir)
 window.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
@@ -2398,7 +2406,13 @@ if (mobileUrlText) {
   const currentHost = window.location.hostname;
   const qrImg = document.getElementById('qr-img');
   if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
-    mobileUrlText.textContent = `http://192.168.1.102:5173/`;
+    const lanUrl = `http://192.168.1.102:5173/`;
+    mobileUrlText.textContent = lanUrl;
+    if (qrImg) {
+      qrImg.onerror = () => {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(lanUrl)}`;
+      };
+    }
   } else {
     const fullUrl = window.location.href;
     mobileUrlText.textContent = fullUrl;
@@ -2430,6 +2444,34 @@ if (btnCopyUrl && mobileUrlText) {
     });
   });
 }
+
+// Modal Arka Planına (Backdrop) Tıklayarak Kapatma Desteği
+[
+  { el: unitsBackdrop, close: closeUnitsModal },
+  { el: profileBackdrop, close: closeProfileModal },
+  { el: leaderboardBackdrop, close: () => { if (leaderboardBackdrop) leaderboardBackdrop.classList.remove('active'); } },
+  { el: mnevoBackdrop, close: () => { if (mnevoBackdrop) mnevoBackdrop.classList.remove('active'); } },
+  { el: mobileQrBackdrop, close: () => { if (mobileQrBackdrop) mobileQrBackdrop.classList.remove('active'); } },
+  { el: quizBackdrop, close: closeQuizModal }
+].forEach(item => {
+  if (item.el) {
+    item.el.addEventListener('click', (e) => {
+      if (e.target === item.el) {
+        item.close();
+      }
+    });
+  }
+});
+
+// Klavyede ESC tuşuna basıldığında aktif olan modalı kapat
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const activeModal = document.querySelector('.bottom-sheet-backdrop.active, .modal-backdrop.active');
+    if (activeModal) {
+      activeModal.classList.remove('active');
+    }
+  }
+});
 
 // Mobil Dokunmatik Kaydırma (Touch Gestures: Sağa -> Öğrendim, Sola -> Zaten Biliyordum)
 let touchStartX = 0;
