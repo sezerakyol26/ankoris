@@ -843,7 +843,7 @@ function updateUI() {
           statusClass = 'pending';
         }
         pill.innerHTML = `
-          <span>Set ${i}</span>
+          <span class="set-pill-label">Set ${i}</span>
           <span class="set-pill-status ${statusClass}">${statusText}</span>
         `;
         pill.addEventListener('click', () => {

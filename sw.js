@@ -1,7 +1,7 @@
 // web_runner/sw.js
 // Ankoris Çevrimdışı Hizmet Çalışanı (Offline PWA Service Worker)
 
-const CACHE_NAME = 'ankoris-v9-design-polish';
+const CACHE_NAME = 'ankoris-v10-perfect-ui';
 const STATIC_ASSETS = [
   './',
   './index.html',
