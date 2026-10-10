@@ -55,30 +55,18 @@
     <!-- Kart Çalışma Alanı -->
     <main class="study-viewport">
       
-      <!-- Hızlı Ünite & Çalışma Çubuğu -->
-      <div class="active-unit-strip" id="btn-strip-open-units">
-        <div class="unit-strip-left">
-          <span class="unit-icon" id="current-unit-icon">📚</span>
-          <div class="unit-strip-text">
-            <span class="unit-strip-title" id="current-unit-title">Ünite 1: YDS En Kritik Sıfatlar</span>
-            <span class="unit-strip-sub" id="current-unit-sub">Seçili: 1 Ünite (20 Kelime)</span>
-          </div>
-        </div>
-        <button class="unit-change-btn">Üniteler ➔</button>
-      </div>
-
       <!-- 20 Kelimelik Set Seçici Barı (1-20, 21-40, 41-60, 61-80, 81-100) -->
       <div class="unit-set-bar" id="unit-set-bar">
         <div class="set-nav-row">
           <button class="set-nav-arrow" id="btn-prev-set" title="Önceki 20 Kelime">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <div class="set-info-text">
+          <div class="set-info-text" id="set-info-box" title="Ünite & Set Bilgisi (Değiştirmek İçin Tıkla)">
             <span class="set-info-title" id="set-info-title">Set 1 / 5</span>
-            <span class="set-info-range" id="set-info-range">(1 - 20. Kelimeler)</span>
+            <span class="set-info-range" id="set-info-range">(1 - 20)</span>
           </div>
           <button class="set-nav-arrow" id="btn-next-set" title="Sonraki 20 Kelime">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
         </div>
         <div class="set-pills-row" id="set-pills-row">
@@ -86,19 +74,23 @@
         </div>
       </div>
 
-      <!-- Bilimsel Unutma Eğrisi & Akıllı Öncelik Uyarısı -->
+      <!-- Bilimsel Unutma Eğrisi & Akıllı Öncelik Uyarısı (Kompakt Tek Satır) -->
       <div class="priority-alert-box" id="priority-alert-box" style="display: none;">
-        <span class="alert-icon">⚠️</span>
-        <div class="alert-text">
-          <strong>Hafıza Uyarısı:</strong> <span id="alert-summary">Kritik kelimeler unutulma eşiğinde!</span>
+        <div class="alert-content-left">
+          <span class="alert-icon">⚠️</span>
+          <div class="alert-text" id="alert-summary">Kritik kelimeler unutulma eşiğinde!</div>
         </div>
-        <button class="alert-action-btn" id="btn-quick-smart-review">Önce Tekrar Et</button>
+        <div class="alert-actions-right">
+          <button class="alert-action-btn" id="btn-quick-smart-review">Tekrar ➔</button>
+          <button class="alert-close-btn" id="btn-close-alert" title="Uyarıyı Kapat">✕</button>
+        </div>
       </div>
 
       <!-- Akıllı Çalışma & Test Modları (4 Ana Mod) -->
       <div class="smart-modes-bar">
-        <button class="mode-btn mode-units active" id="btn-mode-units" title="Ünite Bazlı Çalışma">
-          <span>📚 Ünite</span>
+        <button class="mode-btn mode-units active" id="btn-mode-units" title="Ünite Seçimi & Çalış">
+          <span class="mode-unit-icon">📚</span>
+          <span id="mode-units-label">Ünite 1</span>
         </button>
         <button class="mode-btn mode-hard" id="btn-mode-hard" title="Zorlandığın ve Yanlış Yaptığın Kelimeler">
           <span class="mode-fire">🔥</span> Zor <span class="mode-badge" id="badge-hard-count">0</span>
@@ -168,6 +160,10 @@
 
             <!-- Örnek Cümle -->
             <div class="example-box">
+              <div class="example-header-row">
+                <span class="example-tag">📖 Örnek Cümle</span>
+                <button class="btn-refresh-example" id="btn-refresh-example" title="Bu kelime için farklı bir örnek cümle üret">🔄 Farklı Cümle</button>
+              </div>
               <p class="example-en" id="card-example-en">Smoking has a detrimental effect on lung health.</p>
               <p class="example-tr" id="card-example-tr">Sigaranın akciğer sağlığı üzerinde zararlı bir etkisi vardır.</p>
             </div>

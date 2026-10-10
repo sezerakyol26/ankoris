@@ -714,6 +714,16 @@ const setPillsRow = document.getElementById('set-pills-row');
 const priorityAlertBox = document.getElementById('priority-alert-box');
 const alertSummaryEl = document.getElementById('alert-summary');
 const btnQuickSmartReview = document.getElementById('btn-quick-smart-review');
+const btnCloseAlert = document.getElementById('btn-close-alert');
+let isAlertDismissed = false;
+
+if (btnCloseAlert) {
+  btnCloseAlert.addEventListener('click', (e) => {
+    e.stopPropagation();
+    isAlertDismissed = true;
+    if (priorityAlertBox) priorityAlertBox.style.display = 'none';
+  });
+}
 
 const btnModeUnits = document.getElementById('btn-mode-units');
 const btnModeHard = document.getElementById('btn-mode-hard');
@@ -736,6 +746,257 @@ const mnemonicEl = document.getElementById('card-mnemonic');
 const exampleEnEl = document.getElementById('card-example-en');
 const exampleTrEl = document.getElementById('card-example-tr');
 const sm2StatsEl = document.getElementById('sm2-stats-text');
+const btnRefreshExample = document.getElementById('btn-refresh-example');
+
+// --- DİNAMİK VE ÇEŞİTLİ AKADEMİK ÖRNEK CÜMLE MOTORU ---
+let currentExampleVariant = 0;
+
+function isGenericTemplate(en) {
+  if (!en) return true;
+  return en.includes("The research team presented a") ||
+         en.includes("Experts emphasized the need to") ||
+         en.includes("The economic indicators have") ||
+         en.includes("Understanding the concept of");
+}
+
+const ADJECTIVE_TEMPLATES = [
+  {
+    en: (w) => `Recent empirical studies suggest that the overall outcome is quite ${w} under these conditions.`,
+    tr: (t) => `Son ampirik çalışmalar, genel sonucun bu koşullar altında oldukça ${t} olduğunu göstermektedir.`
+  },
+  {
+    en: (w) => `Developing a ${w} strategy has become the primary objective for international institutions.`,
+    tr: (t) => `Uluslararası kurumlar için ${t} bir strateji geliştirmek birincil hedef haline geldi.`
+  },
+  {
+    en: (w) => `Scientists observed a ${w} pattern in environmental indicators throughout the last decade.`,
+    tr: (t) => `Bilim insanları, son on yıl boyunca çevre göstergelerinde ${t} bir model gözlemledi.`
+  },
+  {
+    en: (w) => `It is particularly ${w} for developing nations to invest in sustainable infrastructure.`,
+    tr: (t) => `Gelişmekte olan ülkelerin sürdürülebilir altyapıya yatırım yapması bilhassa ${t} bir durumdur.`
+  },
+  {
+    en: (w) => `The council released a ${w} report analyzing the multifaceted impacts of modern technology.`,
+    tr: (t) => `Konsey, modern teknolojinin çok yönlü etkilerini inceleyen ${t} bir rapor yayımladı.`
+  },
+  {
+    en: (w) => `Adopting a ${w} perspective during diplomatic dialogues facilitates durable agreements.`,
+    tr: (t) => `Diplomatik diyaloglar sırasında ${t} bir bakış açısı benimsemek kalıcı anlaşmaları kolaylaştırır.`
+  },
+  {
+    en: (w) => `This innovative model provides a ${w} alternative to conventional industrial methods.`,
+    tr: (t) => `Bu yenilikçi model, geleneksel endüstriyel yöntemlere ${t} bir alternatif sunmaktadır.`
+  },
+  {
+    en: (w) => `Epidemiologists discovered ${w} evidence supporting the widespread clinical intervention.`,
+    tr: (t) => `Epidemiyologlar, yaygın klinik müdahaleyi destekleyen ${t} kanıtlar ortaya koydu.`
+  },
+  {
+    en: (w) => `Historical documents indicate a ${w} shift in demographic and economic distribution.`,
+    tr: (t) => `Tarihi belgeler, demografik ve ekonomik dağılımda ${t} bir dönüşüme işaret etmektedir.`
+  },
+  {
+    en: (w) => `The primary hypothesis remained remarkably ${w} across multiple longitudinal trials.`,
+    tr: (t) => `Birincil hipotez, çoklu boylamsal denemeler boyunca kayda değer biçimde ${t} kaldı.`
+  },
+  {
+    en: (w) => `The government introduced ${w} structural policies to mitigate financial uncertainty.`,
+    tr: (t) => `Hükümet, finansal belirsizliği hafifletmek için ${t} yapısal politikalar başlattı.`
+  },
+  {
+    en: (w) => `Clinical trials revealed a ${w} correlation between diet quality and cognitive focus.`,
+    tr: (t) => `Klinik deneyler, beslenme kalitesi ile bilişsel odaklanma arasında ${t} bir ilişki saptadı.`
+  },
+  {
+    en: (w) => `Scholars argue that this cultural trend is increasingly ${w} among modern urban communities.`,
+    tr: (t) => `Akademisyenler, bu kültürel eğilimin modern kentsel topluluklarda giderek daha ${t} olduğunu belirtiyor.`
+  },
+  {
+    en: (w) => `The ecological audit highlighted the ${w} risks associated with rapid industrialization.`,
+    tr: (t) => `Ekolojik denetim, hızlı sanayileşmeyle ilişkili ${t} risklere dikkat çekti.`
+  },
+  {
+    en: (w) => `Academic researchers reached a ${w} consensus after evaluating rigorous scientific data.`,
+    tr: (t) => `Akademik araştırmacılar, titiz bilimsel verileri değerlendirdikten sonra ${t} bir uzlaşıya vardı.`
+  }
+];
+
+const VERB_TEMPLATES = [
+  {
+    en: (w) => `International treaties urge member states to ${w} rigorous environmental benchmarks.`,
+    tr: (t) => `Uluslararası anlaşmalar, üye ülkeleri katı çevresel kriterleri ${t} konusunda teşvik eder.`
+  },
+  {
+    en: (w) => `Biologists conducted controlled experiments to ${w} cellular responses to thermal stress.`,
+    tr: (t) => `Biyologlar, termal strese verilen hücresel tepkileri ${t} amacıyla kontrollü deneyler yürüttü.`
+  },
+  {
+    en: (w) => `The central bank took proactive steps to ${w} growing volatility across foreign markets.`,
+    tr: (t) => `Merkez bankası, dış piyasalardaki artan dalgalanmayı ${t} için proaktif adımlar attı.`
+  },
+  {
+    en: (w) => `Modern educational systems aim to ${w} analytical competence among young researchers.`,
+    tr: (t) => `Modern eğitim sistemleri, genç araştırmacılar arasında analitik yetkinliği ${t} hedefler.`
+  },
+  {
+    en: (w) => `Technicians enforced emergency protocols to ${w} systemic failures in the network.`,
+    tr: (t) => `Teknisyenler, şebekedeki sistemsel arızaları ${t} amacıyla acil durum protokolleri uyguladı.`
+  },
+  {
+    en: (w) => `Sociologists examine key factors that actively ${w} institutional stability over time.`,
+    tr: (t) => `Sosyologlar, zaman içinde kurumsal istikrarı aktif biçimde ${t} temel faktörleri inceliyor.`
+  },
+  {
+    en: (w) => `The public initiative was launched to ${w} community engagement in sustainable development.`,
+    tr: (t) => `Toplumsal girişim, sürdürülebilir kalkınmaya halkın katılımını ${t} amacıyla başlatıldı.`
+  },
+  {
+    en: (w) => `Technological automation continues to ${w} workflows across the global logistics sector.`,
+    tr: (t) => `Teknolojik otomasyon, küresel lojistik sektöründe iş akışlarını ${t} sürdürmektedir.`
+  },
+  {
+    en: (w) => `The advisory council gathered today to ${w} complex regulatory and legal challenges.`,
+    tr: (t) => `Danışma kurulu, karmaşık mevzuat ve yasal zorlukları ${t} için bugün toplandı.`
+  },
+  {
+    en: (w) => `Advanced pharmaceutical research attempts to ${w} the underlying causes of chronic illness.`,
+    tr: (t) => `İleri farmasötik araştırmalar, kronik hastalıkların altta yatan nedenlerini ${t} çabalamaktadır.`
+  },
+  {
+    en: (w) => `Diplomats worked tirelessly throughout the week to ${w} cross-border trade barriers.`,
+    tr: (t) => `Diplomatlar, sınır ötesi ticaret engellerini ${t} için hafta boyunca yorulmadan çalıştı.`
+  },
+  {
+    en: (w) => `Supervisory authorities intervened swiftly to ${w} deceptive commercial marketing campaigns.`,
+    tr: (t) => `Denetleyici otoriteler, yanıltıcı ticari pazarlama kampanyalarını ${t} adına hızla müdahale etti.`
+  },
+  {
+    en: (w) => `Higher education institutions strive to ${w} cross-disciplinary research initiatives.`,
+    tr: (t) => `Yükseköğretim kurumları, disiplinler arası araştırma girişimlerini ${t} için çaba gösteriyor.`
+  },
+  {
+    en: (w) => `Public health agencies adopted decisive guidelines to ${w} epidemic outbreaks effectively.`,
+    tr: (t) => `Halk sağlığı kurumları, salgın hastalıkları etkili şekilde ${t} için kararlı yönergeler benimsedi.`
+  },
+  {
+    en: (w) => `Economists anticipate that digital infrastructure will ${w} productive output nationwide.`,
+    tr: (t) => `Ekonomistler, dijital altyapının ülke genelinde verimli üretimi ${t} öngörmektedir.`
+  }
+];
+
+const NOUN_TEMPLATES = [
+  {
+    en: (w) => `The decisive impact of ${w} on sustainable economic growth cannot be overstated.`,
+    tr: (t) => `Sürdürülebilir ekonomik büyüme üzerinde ${t} unsurunun belirleyici etkisi yadsınamaz.`
+  },
+  {
+    en: (w) => `Leading scholars agree that ${w} plays a fundamental role in societal well-being.`,
+    tr: (t) => `Önde gelen akademisyenler, ${t} kavramının toplumsal refahta temel bir rol oynadığı konusunda hemfikirdir.`
+  },
+  {
+    en: (w) => `The transition toward modern governance requires a comprehensive analysis of ${w}.`,
+    tr: (t) => `Modern yönetişime geçiş, ${t} konusunun kapsamlı bir biçimde incelenmesini gerektirir.`
+  },
+  {
+    en: (w) => `Historical archives illustrate how ${w} altered urban development and civic stability.`,
+    tr: (t) => `Tarihi arşivler, ${t} unsurunun kentsel gelişimi ve sivil istikrarı nasıl dönüştürdüğünü gösteriyor.`
+  },
+  {
+    en: (w) => `Public debates increasingly focus on the legal ethics surrounding modern ${w}.`,
+    tr: (t) => `Kamuoyu tartışmaları giderek modern ${t} etrafındaki yasal etik üzerine odaklanmaktadır.`
+  },
+  {
+    en: (w) => `A lack of reliable ${w} poses persistent challenges for remote communities.`,
+    tr: (t) => `Güvenilir ${t} eksikliği, kırsal topluluklar için sürekli zorluklar teşkil etmektedir.`
+  },
+  {
+    en: (w) => `Technological progress has unlocked new applications for ${w} in daily life.`,
+    tr: (t) => `Teknolojik ilerleme, günlük yaşamda ${t} adına yeni uygulama alanları ortaya çıkarmıştır.`
+  },
+  {
+    en: (w) => `The annual summit highlighted that ${w} remains vital for long-term fiscal stability.`,
+    tr: (t) => `Yıllık zirve, ${t} konusunun uzun vadeli mali istikrar için hayati kalmaya devam ettiğini vurguladı.`
+  },
+  {
+    en: (w) => `International guidelines mandate stringent standards governing the oversight of ${w}.`,
+    tr: (t) => `Uluslararası kurallar, ${t} denetimini yöneten katı standartları zorunlu kılmaktadır.`
+  },
+  {
+    en: (w) => `Scholars conducted empirical fieldwork to trace the cultural origins of ${w}.`,
+    tr: (t) => `Akademisyenler, ${t} olgusunun kültürel kökenlerini izlemek için ampirik saha çalışmaları yaptı.`
+  },
+  {
+    en: (w) => `Proper management of ${w} is widely recognized as a catalyst for human development.`,
+    tr: (t) => `${t} konusunun doğru yönetimi, insani gelişmenin bir katalizörü olarak geniş çapta kabul görmektedir.`
+  },
+  {
+    en: (w) => `The research foundation provided funding to examine the sociological dimensions of ${w}.`,
+    tr: (t) => `Araştırma vakfı, ${t} konusunun sosyolojik boyutlarını incelemek amacıyla finansman sağladı.`
+  }
+];
+
+const ADVERB_TEMPLATES = [
+  {
+    en: (w) => `Environmental indicators have ${w} improved following strict regional regulations.`,
+    tr: (t) => `Çevresel göstergeler, katı bölgesel düzenlemelerin ardından ${t} bir şekilde iyileşti.`
+  },
+  {
+    en: (w) => `Survey respondents reacted ${w} when informed about upcoming administrative reforms.`,
+    tr: (t) => `Ankete katılanlar, yaklaşan idari reformlar hakkında bilgilendirildiklerinde ${t} tepki verdi.`
+  },
+  {
+    en: (w) => `Digital tools have ${w} transformed standard operational workflows worldwide.`,
+    tr: (t) => `Dijital araçlar, dünya genelinde standart operasyonel iş akışlarını ${t} bir biçimde dönüştürdü.`
+  },
+  {
+    en: (w) => `The spokesperson addressed the assembly ${w} regarding multilateral security goals.`,
+    tr: (t) => `Sözcü, çok taraflı güvenlik hedeflerine ilişkin olarak meclise ${t} bir üslupla seslendi.`
+  },
+  {
+    en: (w) => `Economic output expanded ${w} in response to diversified investment strategies.`,
+    tr: (t) => `Ekonomik çıktı, çeşitlendirilmiş yatırım stratejilerine yanıt olarak ${t} bir hızla genişledi.`
+  },
+  {
+    en: (w) => `Specialists monitored the experiment ${w} to prevent potential measurement anomalies.`,
+    tr: (t) => `Uzmanlar, olası ölçüm sapmalarını önlemek için deneyi ${t} bir dikkatle takip etti.`
+  }
+];
+
+function getDiverseExample(card, variant = 0) {
+  if (!card) return { en: '', tr: '' };
+  
+  if (card.exampleEn && !isGenericTemplate(card.exampleEn) && variant === 0) {
+    return { en: card.exampleEn, tr: card.exampleTr || '' };
+  }
+
+  const w = (card.english || '').trim();
+  const trRaw = (card.turkish || '').split(',')[0].trim();
+  const tr = trRaw.toLowerCase();
+  const pos = (card.pos || '').toLowerCase();
+
+  let hash = 0;
+  for (let i = 0; i < w.length; i++) {
+    hash = ((hash << 5) - hash) + w.charCodeAt(i);
+    hash |= 0;
+  }
+  const seed = Math.abs(hash + (variant * 37));
+
+  let pool = NOUN_TEMPLATES;
+  if (pos.includes('verb') || tr.endsWith('mek') || tr.endsWith('mak') || tr.includes('etmek') || tr.includes('olmak')) {
+    pool = VERB_TEMPLATES;
+  } else if (pos.includes('adjective') || pos.includes('sıfat') || w.endsWith('able') || w.endsWith('al') || w.endsWith('ful') || w.endsWith('ic') || w.endsWith('ive') || w.endsWith('ous') || w.endsWith('less') || w.endsWith('ent') || w.endsWith('ant')) {
+    pool = ADJECTIVE_TEMPLATES;
+  } else if (pos.includes('adverb') || pos.includes('zarf') || w.endsWith('ly')) {
+    pool = ADVERB_TEMPLATES;
+  }
+
+  const template = pool[seed % pool.length];
+  return {
+    en: template.en(w),
+    tr: template.tr(tr)
+  };
+}
 
 // 20 Kelimelik Set Tamamlama Ekranı Elementleri
 const setCompletedView = document.getElementById('set-completed-view');
@@ -786,15 +1047,15 @@ function updateUI() {
   badgeHardCount.textContent = hardCount;
   badgeReviewCount.textContent = dueReviewCount;
 
-  // Akıllı Öncelik Uyarısı (Ebbinghaus Alarmı)
-  if (dueReviewCount > 0 || hardCount > 0) {
+  // Akıllı Öncelik Uyarısı (Ebbinghaus Alarmı - Kompakt Tek Satır)
+  if (!isAlertDismissed && (dueReviewCount > 0 || hardCount > 0)) {
     priorityAlertBox.style.display = 'flex';
     if (dueReviewCount > 0) {
-      alertSummaryEl.textContent = `${dueReviewCount} kelime unutulma eşiğinde! Zihnin silmeden tekrar et.`;
-      btnQuickSmartReview.textContent = 'Önce Tekrar Et';
+      alertSummaryEl.innerHTML = `<strong>Hafıza:</strong> ${dueReviewCount} kelime tekrar bekliyor`;
+      btnQuickSmartReview.textContent = 'Tekrar Et ➔';
     } else {
-      alertSummaryEl.textContent = `${hardCount} kelimede zorlandın. Klinik pratik yap!`;
-      btnQuickSmartReview.textContent = 'Zor Kelimeleri Aç';
+      alertSummaryEl.innerHTML = `<strong>Klinik:</strong> ${hardCount} kelimede zorlandın`;
+      btnQuickSmartReview.textContent = 'Çalış ➔';
     }
   } else {
     priorityAlertBox.style.display = 'none';
@@ -805,6 +1066,20 @@ function updateUI() {
   btnModeHard.classList.toggle('active', session.mode === 'HARD');
   btnModeReview.classList.toggle('active', session.mode === 'REVIEW');
 
+  // Kaçıncı ünitenin seçildiği buton üzerinde gösterilsin (Kullanıcı İsteği)
+  const modeUnitsLabel = document.getElementById('mode-units-label');
+  if (modeUnitsLabel) {
+    const count = session.selectedUnitIds.size;
+    if (count === 1) {
+      const uId = Array.from(session.selectedUnitIds)[0];
+      modeUnitsLabel.textContent = `Ünite ${uId}`;
+    } else if (count >= 50) {
+      modeUnitsLabel.textContent = 'Tümü';
+    } else {
+      modeUnitsLabel.textContent = `${count} Ünite`;
+    }
+  }
+
   // 20 Kelimelik Set Barı Yönetimi
   if (session.mode === 'UNITS' && unitSetBar) {
     unitSetBar.style.display = 'flex';
@@ -812,11 +1087,19 @@ function updateUI() {
     const curSet = session.currentSetIndex;
     const unitWords = session.getUnitWords();
 
-    if (setInfoTitle) setInfoTitle.textContent = `Set ${curSet} / ${totalSets}`;
+    if (setInfoTitle) {
+      const count = session.selectedUnitIds.size;
+      if (count === 1) {
+        const uId = Array.from(session.selectedUnitIds)[0];
+        setInfoTitle.textContent = `Ünite ${uId} • Set ${curSet}/${totalSets}`;
+      } else {
+        setInfoTitle.textContent = `Set ${curSet}/${totalSets}`;
+      }
+    }
     if (setInfoRange) {
       const startNum = (curSet - 1) * 20 + 1;
       const endNum = Math.min(startNum + 19, unitWords.length);
-      setInfoRange.textContent = `(${startNum} - ${endNum}. Kelimeler)`;
+      setInfoRange.textContent = `(${startNum} - ${endNum})`;
     }
 
     if (setPillsRow) {
@@ -857,32 +1140,32 @@ function updateUI() {
     unitSetBar.style.display = 'none';
   }
 
-  // Aktif Ünite Başlığı
+  // Aktif Ünite Başlığı (Varsa güncelle)
   if (session.mode === 'HARD') {
-    currentUnitIconEl.textContent = '🔥';
-    currentUnitTitleEl.textContent = 'Zor Kelimeler Kliniği (Zayıf Noktalar)';
-    currentUnitSubEl.textContent = `Önceden Yanlış Yapılan ${session.activeDeck.length} Kelime`;
+    if (currentUnitIconEl) currentUnitIconEl.textContent = '🔥';
+    if (currentUnitTitleEl) currentUnitTitleEl.textContent = 'Zor Kelimeler Kliniği (Zayıf Noktalar)';
+    if (currentUnitSubEl) currentUnitSubEl.textContent = `Önceden Yanlış Yapılan ${session.activeDeck.length} Kelime`;
   } else if (session.mode === 'REVIEW') {
-    currentUnitIconEl.textContent = '🧠';
-    currentUnitTitleEl.textContent = 'Genel Tekrar (Ebbinghaus Unutma Eğrisi)';
-    currentUnitSubEl.textContent = `Zaman Aşımına Uğramış ${session.activeDeck.length} Kelime`;
+    if (currentUnitIconEl) currentUnitIconEl.textContent = '🧠';
+    if (currentUnitTitleEl) currentUnitTitleEl.textContent = 'Genel Tekrar (Ebbinghaus Unutma Eğrisi)';
+    if (currentUnitSubEl) currentUnitSubEl.textContent = `Zaman Aşımına Uğramış ${session.activeDeck.length} Kelime`;
   } else {
     const count = session.selectedUnitIds.size;
     const totalSets = session.getTotalSets();
     if (count === 1) {
       const uId = Array.from(session.selectedUnitIds)[0];
       const uObj = (typeof ANKORIS_UNITS !== 'undefined') ? ANKORIS_UNITS.find(u => u.id === uId) : null;
-      currentUnitIconEl.textContent = uObj ? uObj.icon : '📚';
-      currentUnitTitleEl.textContent = uObj ? uObj.title : `Ünite ${uId}`;
-      currentUnitSubEl.textContent = `Ünite ${uId} • Set ${session.currentSetIndex}/${totalSets} (${session.activeDeck.length} Kelime)`;
+      if (currentUnitIconEl) currentUnitIconEl.textContent = uObj ? uObj.icon : '📚';
+      if (currentUnitTitleEl) currentUnitTitleEl.textContent = uObj ? uObj.title : `Ünite ${uId}`;
+      if (currentUnitSubEl) currentUnitSubEl.textContent = `Ünite ${uId} • Set ${session.currentSetIndex}/${totalSets} (${session.activeDeck.length} Kelime)`;
     } else if (count >= 50) {
-      currentUnitIconEl.textContent = '💎';
-      currentUnitTitleEl.textContent = 'Tüm Üniteler (50 Ünite)';
-      currentUnitSubEl.textContent = `Set ${session.currentSetIndex}/${totalSets} (${session.activeDeck.length} Kelime)`;
+      if (currentUnitIconEl) currentUnitIconEl.textContent = '💎';
+      if (currentUnitTitleEl) currentUnitTitleEl.textContent = 'Tüm Üniteler (50 Ünite)';
+      if (currentUnitSubEl) currentUnitSubEl.textContent = `Set ${session.currentSetIndex}/${totalSets} (${session.activeDeck.length} Kelime)`;
     } else {
-      currentUnitIconEl.textContent = '📚';
-      currentUnitTitleEl.textContent = `Özel Seans: ${count} Ünite`;
-      currentUnitSubEl.textContent = `Set ${session.currentSetIndex}/${totalSets} (${session.activeDeck.length} Kelime)`;
+      if (currentUnitIconEl) currentUnitIconEl.textContent = '📚';
+      if (currentUnitTitleEl) currentUnitTitleEl.textContent = `Özel Seans: ${count} Ünite`;
+      if (currentUnitSubEl) currentUnitSubEl.textContent = `Set ${session.currentSetIndex}/${totalSets} (${session.activeDeck.length} Kelime)`;
     }
   }
 
@@ -939,8 +1222,10 @@ function updateUI() {
 
   meaningEl.textContent = card.turkish;
   mnemonicEl.textContent = card.mnemonic;
-  exampleEnEl.textContent = card.exampleEn;
-  exampleTrEl.textContent = card.exampleTr;
+
+  const dynamicEx = getDiverseExample(card, currentExampleVariant);
+  exampleEnEl.textContent = dynamicEx.en;
+  exampleTrEl.textContent = dynamicEx.tr;
 
   let retText = p.lastReviewedAt ? ` • Kalıcılık: %${Math.round(ret * 100)}` : '';
   let lapseText = p.lapses > 0 ? ` • ${p.lapses} Kez Unutuldu` : '';
@@ -1081,13 +1366,30 @@ function rateKnowledgeChoice(choiceType) {
     cardEl.classList.remove('flipped');
   }
 
+  currentExampleVariant = 0;
   session.currentIndex++;
   updateUI();
+}
+
+if (btnRefreshExample) {
+  btnRefreshExample.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentExampleVariant++;
+    const card = session.currentCard();
+    if (card) {
+      const dynamicEx = getDiverseExample(card, currentExampleVariant);
+      exampleEnEl.textContent = dynamicEx.en;
+      exampleTrEl.textContent = dynamicEx.tr;
+      showToast('🔄 Farklı örnek cümle üretildi!');
+      if ('vibrate' in navigator) navigator.vibrate(10);
+    }
+  });
 }
 
 // 20 Kelimelik Set Yönlendirmeleri
 if (btnPrevSet) {
   btnPrevSet.addEventListener('click', () => {
+    currentExampleVariant = 0;
     session.prevSet();
     updateUI();
   });
@@ -1095,6 +1397,7 @@ if (btnPrevSet) {
 
 if (btnNextSet) {
   btnNextSet.addEventListener('click', () => {
+    currentExampleVariant = 0;
     session.nextSet();
     updateUI();
   });
@@ -1140,10 +1443,14 @@ if (btnSrsAlreadyKnown) {
 
 // --- 7. AKILLI MODLAR ARASI GEÇİŞ ---
 btnModeUnits.addEventListener('click', () => {
-  session.mode = 'UNITS';
-  session.buildDeck();
-  updateUI();
-  showToast('📚 Ünite Çalışma Modu Aktif');
+  if (session.mode === 'UNITS') {
+    openUnitsModal('units');
+  } else {
+    session.mode = 'UNITS';
+    session.buildDeck();
+    updateUI();
+    showToast('📚 Ünite Çalışma Modu Aktif');
+  }
 });
 
 btnModeHard.addEventListener('click', () => {
@@ -1562,9 +1869,17 @@ function closeUnitsModal() {
   unitsBackdrop.classList.remove('active');
 }
 
-document.getElementById('btn-open-units').addEventListener('click', () => openUnitsModal('units'));
-document.getElementById('btn-strip-open-units').addEventListener('click', () => openUnitsModal('units'));
-document.getElementById('btn-close-units').addEventListener('click', closeUnitsModal);
+const btnOpenUnits = document.getElementById('btn-open-units');
+if (btnOpenUnits) btnOpenUnits.addEventListener('click', () => openUnitsModal('units'));
+
+const btnStripOpenUnits = document.getElementById('btn-strip-open-units');
+if (btnStripOpenUnits) btnStripOpenUnits.addEventListener('click', () => openUnitsModal('units'));
+
+const setInfoBox = document.getElementById('set-info-box');
+if (setInfoBox) setInfoBox.addEventListener('click', () => openUnitsModal('units'));
+
+const btnCloseUnits = document.getElementById('btn-close-units');
+if (btnCloseUnits) btnCloseUnits.addEventListener('click', closeUnitsModal);
 
 // Her ünitenin ilerleme, seviye ve zor kelime istatistiklerini hesaplar
 // ÖNEMLİ KURAL: Test çözülmeden kelime asla tam pekiştirilmiş (Usta) sayılmaz!
@@ -2473,7 +2788,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Mobil Dokunmatik Kaydırma (Touch Gestures: Sağa -> Öğrendim, Sola -> Zaten Biliyordum)
+// Mobil Dokunmatik & Fare ile Kaydırma (Touch & Mouse Drag Gestures: Sola -> Öğrendim, Sağa -> Zaten Biliyordum)
 let touchStartX = 0;
 let touchDeltaX = 0;
 let isSwiping = false;
@@ -2503,19 +2818,19 @@ if (cardEl) {
     isSwiping = false;
     cardEl.style.transition = 'transform 0.22s ease';
 
-    if (touchDeltaX > 75) {
-      // Sağa kaydırma -> "Öğrendim"
+    if (touchDeltaX < -75) {
+      // Sola kaydırma -> "Öğrendim" (Kullanıcı İsteği)
       if ('vibrate' in navigator) navigator.vibrate(15);
-      cardEl.style.transform = 'translateX(260px) rotate(14deg)';
+      cardEl.style.transform = 'translateX(-260px) rotate(-14deg)';
       setTimeout(() => {
         cardEl.style.transition = '';
         cardEl.style.transform = '';
         rateKnowledgeChoice('learned');
       }, 180);
-    } else if (touchDeltaX < -75) {
-      // Sola kaydırma -> "Zaten Biliyordum"
+    } else if (touchDeltaX > 75) {
+      // Sağa kaydırma -> "Zaten Biliyordum" (Kullanıcı İsteği)
       if ('vibrate' in navigator) navigator.vibrate(25);
-      cardEl.style.transform = 'translateX(-260px) rotate(-14deg)';
+      cardEl.style.transform = 'translateX(260px) rotate(14deg)';
       setTimeout(() => {
         cardEl.style.transition = '';
         cardEl.style.transform = '';
@@ -2523,6 +2838,58 @@ if (cardEl) {
       }, 180);
     } else {
       // Geri orijinal konumuna al
+      cardEl.style.transform = '';
+      setTimeout(() => {
+        cardEl.style.transition = '';
+      }, 220);
+    }
+  });
+
+  // Masaüstü Fare ile Kaydırma Desteği (Mouse Drag)
+  let isMouseDragging = false;
+  let mouseStartX = 0;
+  let mouseDeltaX = 0;
+
+  cardEl.addEventListener('mousedown', (e) => {
+    if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.tap-hint') || e.target.closest('.btn-refresh-example')) return;
+    isMouseDragging = true;
+    mouseStartX = e.clientX;
+    mouseDeltaX = 0;
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isMouseDragging) return;
+    mouseDeltaX = e.clientX - mouseStartX;
+    if (Math.abs(mouseDeltaX) > 10) {
+      const rotateDeg = mouseDeltaX * 0.04;
+      cardEl.style.transform = `translateX(${mouseDeltaX}px) rotate(${rotateDeg}deg)`;
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!isMouseDragging) return;
+    isMouseDragging = false;
+    cardEl.style.transition = 'transform 0.22s ease';
+
+    if (mouseDeltaX < -75) {
+      // Sola kaydırma -> "Öğrendim"
+      if ('vibrate' in navigator) navigator.vibrate(15);
+      cardEl.style.transform = 'translateX(-260px) rotate(-14deg)';
+      setTimeout(() => {
+        cardEl.style.transition = '';
+        cardEl.style.transform = '';
+        rateKnowledgeChoice('learned');
+      }, 180);
+    } else if (mouseDeltaX > 75) {
+      // Sağa kaydırma -> "Zaten Biliyordum"
+      if ('vibrate' in navigator) navigator.vibrate(25);
+      cardEl.style.transform = 'translateX(260px) rotate(14deg)';
+      setTimeout(() => {
+        cardEl.style.transition = '';
+        cardEl.style.transform = '';
+        rateKnowledgeChoice('alreadyKnown');
+      }, 180);
+    } else {
       cardEl.style.transform = '';
       setTimeout(() => {
         cardEl.style.transition = '';
