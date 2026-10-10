@@ -623,24 +623,181 @@ html, body {
 }
 
 .mnemonic-box {
-  background: var(--surface-light);
-  border: 1px solid rgba(255, 177, 66, 0.3);
+  background: linear-gradient(135deg, rgba(255, 177, 66, 0.08) 0%, rgba(26, 34, 46, 0.85) 100%);
+  border: 1px solid rgba(255, 177, 66, 0.35);
   border-radius: 14px;
-  padding: 12px;
-  margin-bottom: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 16px rgba(255, 177, 66, 0.05);
+  transition: all 0.2s ease;
+}
+
+.mnemonic-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  gap: 6px;
 }
 
 .mnemonic-tag {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 800;
-  color: var(--accent);
-  margin-bottom: 4px;
+  color: #FFA502;
+  letter-spacing: 0.4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.custom-anchor-badge {
+  background: rgba(0, 245, 160, 0.15);
+  color: #00F5A0;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 5px;
+  border: 1px solid rgba(0, 245, 160, 0.35);
+}
+
+.mnemonic-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-mnemonic-action {
+  background: rgba(255, 177, 66, 0.14);
+  border: 1px solid rgba(255, 177, 66, 0.35);
+  color: #FFEAA7;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.3;
+}
+
+.btn-mnemonic-action:hover {
+  background: rgba(255, 177, 66, 0.28);
+  color: #FFFFFF;
+  border-color: #FFA502;
+  transform: scale(1.04);
+}
+
+.mnemonic-peg-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px dashed rgba(255, 177, 66, 0.4);
+  padding: 2px 7px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.peg-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #FFA502;
+}
+
+.peg-text {
+  font-size: 11px;
+  font-weight: 800;
+  color: #FFEAA7;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .mnemonic-text {
-  font-size: 12.5px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.45;
   color: #F1F5F9;
+  margin-bottom: 6px;
+}
+
+.mnemonic-lock-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #00F5A0;
+  background: rgba(0, 245, 160, 0.08);
+  border: 1px solid rgba(0, 245, 160, 0.25);
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.mnemonic-edit-view {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.mnemonic-textarea {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid #FFA502;
+  border-radius: 8px;
+  color: #FFFFFF;
+  font-size: 11.5px;
+  padding: 6px 8px;
+  resize: none;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.mnemonic-textarea:focus {
+  box-shadow: 0 0 10px rgba(255, 177, 66, 0.3);
+}
+
+.mnemonic-edit-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-save-anchor {
+  background: linear-gradient(135deg, #00F5A0, #00B894);
+  border: none;
+  color: #000000;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-save-anchor:hover {
+  transform: scale(1.04);
+}
+
+.btn-cancel-anchor {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #CBD5E1;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-delete-anchor {
+  background: rgba(255, 82, 82, 0.15);
+  border: 1px solid rgba(255, 82, 82, 0.35);
+  color: #FF7675;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-left: auto;
 }
 
 .example-box {

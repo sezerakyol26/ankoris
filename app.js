@@ -998,6 +998,466 @@ function getDiverseExample(card, variant = 0) {
   };
 }
 
+// --- GELİŞMİŞ NÖRO-DİLBİLİM ZİHİNSEL ÇAPA (MNEMONIC) SİSTEMİ ---
+let currentMnemonicVariant = 0;
+
+// Kullanıcının Kişisel Çapalarını Yöneten Hafıza Yöneticisi
+const CustomMnemonicManager = {
+  STORAGE_KEY: 'ankoris_custom_mnemonics',
+  getAll() {
+    try {
+      const data = localStorage.getItem(this.STORAGE_KEY);
+      return data ? JSON.parse(data) : {};
+    } catch (e) {
+      return {};
+    }
+  },
+  get(wordId) {
+    const all = this.getAll();
+    return all[wordId] || null;
+  },
+  save(wordId, text) {
+    const all = this.getAll();
+    all[wordId] = text.trim();
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(all));
+  },
+  delete(wordId) {
+    const all = this.getAll();
+    delete all[wordId];
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(all));
+  }
+};
+
+// Özel Seçilmiş Zihinsel Çapa & Absürt Senaryo Veritabanı
+const CURATED_MNEMONIC_DB = {
+  "detrimental": {
+    peg: "De-tri-men-tal ➔ [Deri montlu kimyager]",
+    stories: [
+      "Deri montlu bir kimyager ormanda fabrikasından asit dökerek doğaya büyük ZARAR veriyor!",
+      "Deri mont giyen motorcu fırtınada üşüyünce sağlığına ZARAR geldiğini fark etti.",
+      "Laboratuvarda deri montu asit damlasıyla yanan çırak, maddenin ne kadar ZARARLI olduğunu anladı."
+    ],
+    lock: "Deri mont ➔ Zararlı"
+  },
+  "ambiguous": {
+    peg: "Am-bi-gu-ous ➔ [Amcam bir gün]",
+    stories: [
+      "Amcam bir gün sisli havada bir canavar gördüğünü iddia etti ama ne gördüğü son derece BELİRSİZ ve muğlaktı!",
+      "Amcam bir gün gizli bir harita buldu fakat üzerindeki yazılar silik olduğundan hedefi MUĞLAK kaldı."
+    ],
+    lock: "Amcamın anısı ➔ Belirsiz / Muğlak"
+  },
+  "mitigate": {
+    peg: "Miti-gate ➔ [Miting kapısı]",
+    stories: [
+      "Miting kapısında (gate) toplanan gergin kalabalığa buz gibi limonata dağıtarak öfkeyi HAFİFLETTİLER ve azalttılar!",
+      "Şehir meydanındaki miting kapısına ekstra güvenlik koyarak olası riskleri HAFİFLETTİLER."
+    ],
+    lock: "Miting kapısı ➔ Hafifletmek"
+  },
+  "vulnerable": {
+    peg: "Vul-ner-able ➔ [Valizi çalınan]",
+    stories: [
+      "Yabancı bir ülkede tüm valizleri çalınan turist cüzdansız kalarak sokakta SAVUNMASIZ ve hassas kaldı!",
+      "Vapur iskelesinde rüzgarda valizi denize düşen yaşlı adam soğuk havada SAVUNMASIZ bir halde titredi."
+    ],
+    lock: "Valizsiz turist ➔ Savunmasız"
+  },
+  "plausible": {
+    peg: "Plau-si-ble ➔ [Pilavı siboplu tencerede pişirmek]",
+    stories: [
+      "Aşçı, pirinç pilavını siboplu düdüklü tencerede 5 dakikada pişirme teorisini anlattı; kulağa çok AKLA YATKIN ve makul geldi!",
+      "Dedektifin pilav tabağındaki parmak izini inceleyip suçluyu bulma teorisi mahkemeye son derece MAKUL geldi."
+    ],
+    lock: "Siboplu pilav ➔ Akla Yatkın / Makul"
+  },
+  "prevalent": {
+    peg: "Pre-va-lent ➔ [Pırasalı börek]",
+    stories: [
+      "Bu köyde pırasalı börek pişirmek halk arasında o kadar YAYGIN ki her evin bacasından kokusu tütüyor!",
+      "Kış mevsiminde pırasa tüketimi grip salgınını önlemek için son derece YAYGIN bir gelenektir."
+    ],
+    lock: "Pırasalı börek ➔ Yaygın"
+  },
+  "substantial": {
+    peg: "Sub-stan-tial ➔ [Sabit stantlar]",
+    stories: [
+      "Fuardaki sabit stantları yenilemek için kasadan KAYDA DEĞER ve önemli miktarda bütçe harcandı!",
+      "Şirket, sabit stantlarına gelen müşterilerden bu ay KAYDA DEĞER bir ciro elde etti."
+    ],
+    lock: "Sabit stantlar ➔ Kayda Değer / Önemli"
+  },
+  "inevitable": {
+    peg: "In-evi-ta-ble ➔ [İneğin eve girmesi]",
+    stories: [
+      "Açık bırakılan köy kapısından dev ineğin salona girmesi artık KAÇINILMAZ bir sondu!",
+      "Yokuş aşağı freni patlayan arabanın çitlere çarpması KAÇINILMAZ oldu."
+    ],
+    lock: "İnek eve girdi ➔ Kaçınılmaz"
+  },
+  "lucrative": {
+    peg: "Lu-cra-tive ➔ [Lüks restoran]",
+    stories: [
+      "Boğaz kıyısında açtığı lüks restoranda altın kaplama tatlı satarak inanılmaz KAZANÇLI ve karlı bir iş kurdu!",
+      "Lüks arabaları tamir eden usta için bu sektör son derece KARLI bir gelir kapısı oldu."
+    ],
+    lock: "Lüks restoran ➔ Kazançlı / Karlı"
+  },
+  "abundant": {
+    peg: "A-bun-dant ➔ [Abanan çiftçi]",
+    stories: [
+      "Tarlasına tüm gücüyle abanarak çalışan çiftçi, hasat mevsiminde BOL ve bereketli mahsul topladı!",
+      "Ağacın dallarına abanan çocuklar sepete BOL miktarda elma doldurdu."
+    ],
+    lock: "Abanan çiftçi ➔ Bol / Bereketli"
+  },
+  "eradicate": {
+    peg: "E-ra-di-cate ➔ [Eski radyoyu ezmek]",
+    stories: [
+      "Sinirlenen bilim insanı eski radyoyu balyozla ezerek virüs gibi KÖKÜNÜ KAZIDI ve yok etti!",
+      "Tarladaki zararlı otların üzerine traktörle çıkıp köklerini tamamen KAZIDILAR."
+    ],
+    lock: "Radyoyu ezmek ➔ Kökünü Kazımak"
+  },
+  "deteriorate": {
+    peg: "De-te-ri-o-rate ➔ [Deftere rate yazmak]",
+    stories: [
+      "Öğretmen deftere sınav notlarını (rate) yazarken son sayfalara doğru öğrencinin performansı KÖTÜLEŞTİ ve bozuldu!",
+      "Güneş altında unutulan eski defterin sayfaları gün geçtikçe KÖTÜLEŞİP dağıldı."
+    ],
+    lock: "Defter notları ➔ Kötüleşmek"
+  },
+  "absent": {
+    peg: "Ab-sent ➔ [Ablam nöbette]",
+    stories: [
+      "Öğretmen sınıfta yoklama alırken ablamın bugün okulda YOK (absent) olduğunu söyledi!",
+      "Fabrikada vardiya müdürü listeye baktı; gece vardiyasında sorumlu usta YOKTU."
+    ],
+    lock: "Ablam nöbette ➔ Yok"
+  },
+  "abandon": {
+    peg: "A-ban-don ➔ [A! Bando takımı]",
+    stories: [
+      "Yağmur aniden bastırınca 'A! Bando takımı enstrümanlarını sahnede TERK ETTİ!' diye bağırdılar.",
+      "Issız adada mahsur kalan kaptan batmak üzere olan gemisini TERK ETMEK zorunda kaldı."
+    ],
+    lock: "Bando kaçtı ➔ Terk Etmek"
+  },
+  "compel": {
+    peg: "Com-pel ➔ [Komiser Pelin]",
+    stories: [
+      "Komiser Pelin şüpheliyi suçunu itiraf etmesi için kanıtlarla ZORLADI ve mecbur bıraktı!",
+      "Hukuk fakültesi dekanı öğrencileri derse katılmaya ZORLADI."
+    ],
+    lock: "Komiser Pelin ➔ Zorlamak / Mecbur Bırakmak"
+  },
+  "coincide": {
+    peg: "Coin-cide ➔ [Koşup inen dede]",
+    stories: [
+      "Yokuştan koşup inen dede ile gelen son otobüs aynı saniyede durağa varıp tesadüfen ÇAKIŞTI!",
+      "İki büyük festivalin aynı güne denk gelmesi tarihlerinin ÇAKIŞMASINA neden oldu."
+    ],
+    lock: "Koşup inen dede ➔ Çakışmak / Denk Gelmek"
+  },
+  "depict": {
+    peg: "De-pict ➔ [Deftere picture çizmek]",
+    stories: [
+      "Ressam defterine çizdiği devasa picture (resim) ile savaşın yıkımını gözler önüne SERDİ ve TASVİR ETTİ!",
+      "Yazar son romanında eski İstanbul sokaklarını muazzam detaylarla TASVİR ETMİŞ."
+    ],
+    lock: "Deftere picture ➔ Tasvir Etmek / Betimlemek"
+  },
+  "elicit": {
+    peg: "E-li-cit ➔ [Elini cebe atmak]",
+    stories: [
+      "Sihirbaz aniden elini cebe atıp güvercini çıkararak salondaki herkesten coşkulu bir alkış KOPARDI ve ortaya çıkardı!",
+      "Dedektif zanlıya sorduğu akılcı sorularla gizli bilgiyi ORTAYA ÇIKARDI."
+    ],
+    lock: "Elini cebe attı ➔ Ortaya Çıkarmak / Sağlamak"
+  },
+  "fluctuate": {
+    peg: "Fluc-tu-ate ➔ [Flüt çalan atlet]",
+    stories: [
+      "Flüt çalan maraton atleti koştukça flütün sesi bir yükselip bir alçalarak sürekli DALGALANDI!",
+      "Borsa ekranındaki döviz kurları gün boyunca çılgınca DALGALANDI."
+    ],
+    lock: "Flütün sesi ➔ Dalgalanmak"
+  },
+  "hinder": {
+    peg: "Hin-der ➔ [Hindistan cevizi derede]",
+    stories: [
+      "Derede yüzen dev Hindistan cevizi su bendini tıkayarak gemilerin geçişini ENGELLEDİ!",
+      "Şiddetli kar fırtınası kurtarma ekiplerinin dağa ulaşmasını ENGELLEDİ."
+    ],
+    lock: "Hindistan cevizi ➔ Engellemek / Aksatmak"
+  },
+  "reluctant": {
+    peg: "Re-luc-tant ➔ [Reçelli lokumu tatmak]",
+    stories: [
+      "Sıkı diyetteki sporcu, uzatılan reçelli lokumu tatmak konusunda son derece İSTEKSİZ davrandı!",
+      "Sözleşmeyi imzalamak istemeyen ortak masadan kalkarken oldukça İSTEKSİZDİ."
+    ],
+    lock: "Reçelli lokum ➔ İsteksiz / Gönülsüz"
+  },
+  "trigger": {
+    peg: "Trig-ger ➔ [Tetik gerildi]",
+    stories: [
+      "Eski tüfeğin paslı tetiği gerilince arkadaki dev alarmı TETİKLEDİ ve olayları başlattı!",
+      "Stres ve uykusuzluk migren atağını aniden TETİKLEDİ."
+    ],
+    lock: "Tetik gerildi ➔ Tetiklemek / Başlatmak"
+  },
+  "scarce": {
+    peg: "Scar-ce ➔ [Sakar sirke]",
+    stories: [
+      "Kuraklık yılında köylüler için sakar ustanın yaptığı doğal sirke bile piyasada KIT ve yetersiz kaldı!",
+      "Çölün ortasındaki vahada temiz içme suyu son derece KIT ve değerliydi."
+    ],
+    lock: "Sakar sirke ➔ Kıt / Yetersiz"
+  },
+  "comply": {
+    peg: "Com-ply ➔ [Komşunun play kuralı]",
+    stories: [
+      "Çocuklar bahçede oyun oynarken komşunun koyduğu 'play' sessizlik kuralına harfiyen UYDU!",
+      "Fabrika yönetimi yeni çevre ve atık yasalarına tam olarak UYMAK zorundaydı."
+    ],
+    lock: "Komşunun kuralı ➔ Uymak / Boyun Eğmek"
+  },
+  "advocate": {
+    peg: "Ad-vo-cate ➔ [Avukat kedi]",
+    stories: [
+      "Cübbe giyen bilge avukat kedi, mahkemede ormandaki tüm canlıların haklarını SAVUNDU!",
+      "Bilim insanları temiz enerji kullanımını uluslararası zirvede hararetle SAVUNDULAR."
+    ],
+    lock: "Avukat kedi ➔ Savunmak / Desteklemek"
+  },
+  "thrive": {
+    peg: "Thri-ve ➔ [Tır ivmelendi]",
+    stories: [
+      "Otoyola çıkan dev tır ivmelenip tam gaz yol alırken arkasındaki lojistik şirketi GELİŞTİ ve serpildi!",
+      "Bol güneş ve su alan tropikal bitkiler serada hızla GELİŞİP büyüdü."
+    ],
+    lock: "Tır ivmelendi ➔ Gelişmek / Büyümek / Serpilmek"
+  },
+  "prohibit": {
+    peg: "Pro-hi-bit ➔ [Profesör hibrit]",
+    stories: [
+      "Laboratuvarın profesörü öğrencilerin zehirli hibrit tohumlara çıplak elle dokunmasını KESİNLİKLE YASAKLADI!",
+      "Müze yönetimi içeride flaşlı fotoğraf çekilmesini tamamen YASAKLAMIŞTI."
+    ],
+    lock: "Profesör uyardı ➔ Yasaklamak"
+  },
+  "resemble": {
+    peg: "Re-semble ➔ [Ressamın sembolü]",
+    stories: [
+      "Ressamın tuvale çizdiği altın sembol, eski kraliyet tacına tıpatıp BENZİYORDU!",
+      "Yeni doğan ikiz bebekler gülümserken birbirlerine olağanüstü derecede BENZİYORDU."
+    ],
+    lock: "Ressamın sembolü ➔ Benzemek / Andırmak"
+  },
+  "devastate": {
+    peg: "Devas-tate ➔ [Devasa testere]",
+    stories: [
+      "Kontrolden çıkan devasa testere koca fabrikadaki ahşap blokları YIKTI ve yerle bir etti!",
+      "Gece meydana gelen şiddetli kasırga sahil kasabasını tamamen YIKIP harap etti."
+    ],
+    lock: "Devasa testere ➔ Yıkmak / Harap Etmek"
+  }
+};
+
+function generateNeuroAnchor(card, variant = 0) {
+  if (!card) return null;
+
+  // 1. Kullanıcının Kendi Özel Çapası Varsa Öncelikli Olarak Göster
+  const custom = CustomMnemonicManager.get(card.id);
+  if (custom) {
+    return {
+      isCustom: true,
+      peg: `Kişisel Notun`,
+      story: custom,
+      lock: `${card.english} ➔ ${card.turkish}`
+    };
+  }
+
+  const cleanEng = (card.english || '').split('(')[0].trim().toLowerCase();
+  const trRaw = (card.turkish || '').split(',')[0].trim();
+  const trUpper = trRaw.toUpperCase();
+
+  // 2. Özel Veritabanında Tanımlı mı?
+  if (CURATED_MNEMONIC_DB[cleanEng]) {
+    const item = CURATED_MNEMONIC_DB[cleanEng];
+    const storyIdx = (variant) % item.stories.length;
+    return {
+      isCustom: false,
+      peg: item.peg,
+      story: item.stories[storyIdx],
+      lock: item.lock
+    };
+  }
+
+  // 3. Prosedürel Fonetik Parçalama & Nöro-Çapa Üretici
+  const syllables = cleanEng.match(/[bcdfghjklmnpqrstvwxyz]*[aeiouy]+[bcdfghjklmnpqrstvwxyz]*/gi) || [cleanEng];
+  const headSyllable = (syllables[0] || cleanEng).toUpperCase();
+  const tailSyllable = syllables.length > 1 ? syllables[syllables.length - 1].toUpperCase() : '';
+  const formattedSyllables = syllables.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('-');
+
+  const PREFIX_PEGS = {
+    "ab": "Ablam / Apartman",
+    "ac": "Akıl / Akşam",
+    "ad": "Adam / Adres",
+    "al": "Alarm / Altın",
+    "am": "Amcam / Ambulans",
+    "an": "Anahtar / Anten",
+    "ap": "Apartman / Apos",
+    "ar": "Araba / Arkadaş",
+    "as": "Asker / Aslan",
+    "at": "Ateş / Atkı",
+    "au": "Otobüs / Otomobil",
+    "ba": "Balık / Bahçe",
+    "be": "Bebek / Belediye",
+    "bi": "Bilet / Bilgisayar",
+    "bo": "Bomba / Boya",
+    "br": "Brezilya / Brand",
+    "ca": "Cadde / Kamyon",
+    "ch": "Çay / Çikolata",
+    "cl": "Klarnet / Kulüp",
+    "co": "Komşu / Kolej",
+    "cr": "Kral / Kredi",
+    "da": "Damla / Dans",
+    "de": "Dede / Deniz",
+    "di": "Dişçi / Direksiyon",
+    "do": "Doktor / Dosya",
+    "dr": "Dram / Dron",
+    "ec": "Eczane / Ekoloji",
+    "ef": "Efsane / Efendi",
+    "el": "Elektrik / Elma",
+    "em": "Emlakçı / Ekmek",
+    "en": "Enerji / Engelli",
+    "ep": "Epos / Epik",
+    "eq": "Ekvator / Ekol",
+    "es": "Esnaf / Eskici",
+    "ev": "Evlat / Evren",
+    "ex": "Ekspres / Eksper",
+    "fa": "Fabrika / Fantezi",
+    "fi": "Film / Fidan",
+    "fl": "Flüt / Flaş",
+    "fo": "Fotoğraf / Forklift",
+    "fr": "Fransa / Fırın",
+    "ga": "Gazete / Garaj",
+    "ge": "Gemi / Gezegen",
+    "gl": "Gözlük / Gladyatör",
+    "gr": "Grup / Grafik",
+    "ha": "Halı / Havuz",
+    "he": "Helikopter / Heykel",
+    "hi": "Hilal / Hızlı tren",
+    "ho": "Horoz / Otel",
+    "hu": "Huzur / Huni",
+    "il": "İlkokul / İlaç",
+    "im": "İmparator / İmdat",
+    "in": "İnşaat / İncir",
+    "ir": "İrade / İpek",
+    "ju": "Jüri / Judo",
+    "la": "Lamba / Laboratuvar",
+    "le": "Leopar / Levha",
+    "li": "Liman / Limon",
+    "lo": "Lokomotif / Lokum",
+    "lu": "Lüks / Lüfer",
+    "ma": "Masa / Makine",
+    "me": "Mektup / Metal",
+    "mi": "Miting / Mimar",
+    "mo": "Motor / Model",
+    "mu": "Müze / Müzik",
+    "na": "Nane / Nakliye",
+    "ne": "Neon / Nehir",
+    "no": "Nohut / Noter",
+    "nu": "Numara / Nükleer",
+    "ob": "Obur / Otobüs",
+    "oc": "Ocak / Okyanus",
+    "op": "Operatör / Optik",
+    "or": "Orman / Orkestra",
+    "ov": "Oval / Ovası",
+    "pa": "Paket / Papağan",
+    "pe": "Petrol / Peynir",
+    "pi": "Piyano / Pilot",
+    "pl": "Plaj / Plaket",
+    "po": "Polis / Portakal",
+    "pr": "Prens / Profesör",
+    "pu": "Pusula / Puan",
+    "qu": "Kutup / Kuantum",
+    "ra": "Radyo / Radar",
+    "re": "Ressam / Reçete",
+    "ri": "Ritim / Rıhtım",
+    "ro": "Robot / Roket",
+    "ru": "Ruj / Rulo",
+    "sa": "Saat / Sandık",
+    "sc": "Skuter / Sahne",
+    "se": "Sepet / Sera",
+    "sh": "Şapka / Şelale",
+    "si": "Siren / Sinyal",
+    "so": "Soba / Somun",
+    "sp": "Spor / Spiker",
+    "st": "Stadyum / Stant",
+    "su": "Subay / Sabun",
+    "ta": "Tablo / Tanker",
+    "te": "Telefon / Telsiz",
+    "th": "Tiyatro / Termos",
+    "ti": "Tilki / Timsah",
+    "to": "Tohum / Torba",
+    "tr": "Traktör / Tren",
+    "un": "Un fabrikası / Üniversite",
+    "va": "Valiz / Vapur",
+    "ve": "Veteriner / Vezne",
+    "vi": "Villa / Vinç",
+    "vo": "Volkan / Voleybol",
+    "wa": "Vagon / Vantilatör",
+    "wi": "Vites / Viraj"
+  };
+
+  const twoLetters = cleanEng.slice(0, 2);
+  const soundPeg = PREFIX_PEGS[twoLetters] || `${headSyllable}`;
+
+  const SCENARIO_VARIANTS = [
+    {
+      story: `Dev sahnede [${soundPeg}] beliriyor; elindeki megafonla tüm şehre "${trUpper}" diye haykırıyor! Bu çılgın sahneyi aklına çivile.`,
+      lock: `${headSyllable} ➔ ${trUpper}`
+    },
+    {
+      story: `Gözlerini kapa: Bir film sahnesindesin, [${soundPeg}] çevresinde beklenmedik bir olay patlak veriyor ve ortaya doğrudan "${trUpper}" çıkıyor!`,
+      lock: `${headSyllable}...${tailSyllable} ➔ ${trUpper}`
+    },
+    {
+      story: `Absürt çağrışım: Masada duran [${soundPeg}] parıldamaya başlıyor ve sana kulağına "${trUpper}" anlamını fısıldıyor!`,
+      lock: `Sihirli çağrışım ➔ ${trUpper}`
+    },
+    {
+      story: `Dinamik aksiyon: [${soundPeg}] hızla koşarak önüne çıkan engelleri aşıyor ve doğrudan "${trUpper}" hedefine kilitleniyor!`,
+      lock: `Hedefe kilitlen ➔ ${trUpper}`
+    }
+  ];
+
+  const chosenScenario = SCENARIO_VARIANTS[variant % SCENARIO_VARIANTS.length];
+
+  return {
+    isCustom: false,
+    peg: `${formattedSyllables} ➔ [${soundPeg}]`,
+    story: chosenScenario.story,
+    lock: chosenScenario.lock
+  };
+}
+
+// Zihinsel Çapa DOM Elementleri
+const badgeCustomAnchor = document.getElementById('badge-custom-anchor');
+const btnRefreshMnemonic = document.getElementById('btn-refresh-mnemonic');
+const btnEditMnemonic = document.getElementById('btn-edit-mnemonic');
+const mnemonicContentView = document.getElementById('mnemonic-content-view');
+const mnemonicEditView = document.getElementById('mnemonic-edit-view');
+const customMnemonicInput = document.getElementById('custom-mnemonic-input');
+const btnSaveCustomAnchor = document.getElementById('btn-save-custom-anchor');
+const btnCancelCustomAnchor = document.getElementById('btn-cancel-custom-anchor');
+const btnDeleteCustomAnchor = document.getElementById('btn-delete-custom-anchor');
+const mnemonicPegText = document.getElementById('mnemonic-peg-text');
+const mnemonicLockText = document.getElementById('mnemonic-lock-text');
+
 // 20 Kelimelik Set Tamamlama Ekranı Elementleri
 const setCompletedView = document.getElementById('set-completed-view');
 const completedTitle = document.getElementById('completed-title');
@@ -1130,6 +1590,10 @@ function updateUI() {
           <span class="set-pill-status ${statusClass}">${statusText}</span>
         `;
         pill.addEventListener('click', () => {
+          currentExampleVariant = 0;
+          currentMnemonicVariant = 0;
+          if (mnemonicEditView) mnemonicEditView.style.display = 'none';
+          if (mnemonicContentView) mnemonicContentView.style.display = '';
           session.goToSet(i);
           updateUI();
         });
@@ -1221,7 +1685,19 @@ function updateUI() {
   }
 
   meaningEl.textContent = card.turkish;
-  mnemonicEl.textContent = card.mnemonic;
+
+  // Gelişmiş Nöro-Çapa (Zihinsel Çapa) Yönetimi
+  const anchorData = generateNeuroAnchor(card, currentMnemonicVariant);
+  if (anchorData) {
+    if (mnemonicPegText) mnemonicPegText.textContent = anchorData.peg;
+    if (mnemonicEl) mnemonicEl.textContent = anchorData.story;
+    if (mnemonicLockText) mnemonicLockText.textContent = `Hafıza Kilidi: ${anchorData.lock}`;
+    if (badgeCustomAnchor) badgeCustomAnchor.style.display = anchorData.isCustom ? 'inline-block' : 'none';
+    if (btnDeleteCustomAnchor) btnDeleteCustomAnchor.style.display = anchorData.isCustom ? 'inline-block' : 'none';
+  } else {
+    if (mnemonicEl) mnemonicEl.textContent = card.mnemonic || '';
+    if (badgeCustomAnchor) badgeCustomAnchor.style.display = 'none';
+  }
 
   const dynamicEx = getDiverseExample(card, currentExampleVariant);
   exampleEnEl.textContent = dynamicEx.en;
@@ -1367,6 +1843,9 @@ function rateKnowledgeChoice(choiceType) {
   }
 
   currentExampleVariant = 0;
+  currentMnemonicVariant = 0;
+  if (mnemonicEditView) mnemonicEditView.style.display = 'none';
+  if (mnemonicContentView) mnemonicContentView.style.display = '';
   session.currentIndex++;
   updateUI();
 }
@@ -1386,10 +1865,126 @@ if (btnRefreshExample) {
   });
 }
 
+// Zihinsel Çapa (Mnemonic) Olay Dinleyicileri
+if (btnRefreshMnemonic) {
+  btnRefreshMnemonic.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentMnemonicVariant++;
+    const card = session.currentCard();
+    if (card) {
+      const anchorData = generateNeuroAnchor(card, currentMnemonicVariant);
+      if (anchorData) {
+        if (mnemonicPegText) mnemonicPegText.textContent = anchorData.peg;
+        if (mnemonicEl) mnemonicEl.textContent = anchorData.story;
+        if (mnemonicLockText) mnemonicLockText.textContent = `Hafıza Kilidi: ${anchorData.lock}`;
+        if (badgeCustomAnchor) badgeCustomAnchor.style.display = anchorData.isCustom ? 'inline-block' : 'none';
+      }
+      showToast('🔄 Alternatif zihinsel çapa üretildi!');
+      if ('vibrate' in navigator) navigator.vibrate(10);
+    }
+  });
+}
+
+if (btnEditMnemonic) {
+  btnEditMnemonic.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const card = session.currentCard();
+    if (!card) return;
+
+    const custom = CustomMnemonicManager.get(card.id);
+    const anchorData = generateNeuroAnchor(card, currentMnemonicVariant);
+    
+    if (customMnemonicInput) {
+      customMnemonicInput.value = custom || (anchorData ? anchorData.story : card.mnemonic || '');
+    }
+    if (mnemonicContentView) mnemonicContentView.style.display = 'none';
+    if (mnemonicEditView) mnemonicEditView.style.display = 'flex';
+    if (btnDeleteCustomAnchor) {
+      btnDeleteCustomAnchor.style.display = custom ? 'inline-block' : 'none';
+    }
+    if (customMnemonicInput) {
+      setTimeout(() => customMnemonicInput.focus(), 50);
+    }
+  });
+}
+
+if (btnSaveCustomAnchor) {
+  btnSaveCustomAnchor.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const card = session.currentCard();
+    if (!card) return;
+
+    const val = (customMnemonicInput ? customMnemonicInput.value : '').trim();
+    if (!val) {
+      showToast('Lütfen bir çapa metni yazın.');
+      return;
+    }
+
+    CustomMnemonicManager.save(card.id, val);
+    if (mnemonicEditView) mnemonicEditView.style.display = 'none';
+    if (mnemonicContentView) mnemonicContentView.style.display = '';
+    
+    const anchorData = generateNeuroAnchor(card, currentMnemonicVariant);
+    if (anchorData) {
+      if (mnemonicPegText) mnemonicPegText.textContent = anchorData.peg;
+      if (mnemonicEl) mnemonicEl.textContent = anchorData.story;
+      if (mnemonicLockText) mnemonicLockText.textContent = `Hafıza Kilidi: ${anchorData.lock}`;
+      if (badgeCustomAnchor) badgeCustomAnchor.style.display = 'inline-block';
+    }
+    showToast('⭐ Kişisel çapan kaydedildi!');
+    if ('vibrate' in navigator) navigator.vibrate(15);
+  });
+}
+
+if (btnCancelCustomAnchor) {
+  btnCancelCustomAnchor.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (mnemonicEditView) mnemonicEditView.style.display = 'none';
+    if (mnemonicContentView) mnemonicContentView.style.display = '';
+  });
+}
+
+if (btnDeleteCustomAnchor) {
+  btnDeleteCustomAnchor.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const card = session.currentCard();
+    if (!card) return;
+
+    CustomMnemonicManager.delete(card.id);
+    if (mnemonicEditView) mnemonicEditView.style.display = 'none';
+    if (mnemonicContentView) mnemonicContentView.style.display = '';
+    
+    const anchorData = generateNeuroAnchor(card, currentMnemonicVariant);
+    if (anchorData) {
+      if (mnemonicPegText) mnemonicPegText.textContent = anchorData.peg;
+      if (mnemonicEl) mnemonicEl.textContent = anchorData.story;
+      if (mnemonicLockText) mnemonicLockText.textContent = `Hafıza Kilidi: ${anchorData.lock}`;
+      if (badgeCustomAnchor) badgeCustomAnchor.style.display = 'none';
+    }
+    showToast('Varsayılan nöro-çapaya dönüldü.');
+  });
+}
+
+if (mnemonicEditView) {
+  mnemonicEditView.addEventListener('click', (e) => e.stopPropagation());
+}
+if (customMnemonicInput) {
+  customMnemonicInput.addEventListener('click', (e) => e.stopPropagation());
+  customMnemonicInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (btnSaveCustomAnchor) btnSaveCustomAnchor.click();
+    }
+  });
+}
+
 // 20 Kelimelik Set Yönlendirmeleri
 if (btnPrevSet) {
   btnPrevSet.addEventListener('click', () => {
     currentExampleVariant = 0;
+    currentMnemonicVariant = 0;
+    if (mnemonicEditView) mnemonicEditView.style.display = 'none';
+    if (mnemonicContentView) mnemonicContentView.style.display = '';
     session.prevSet();
     updateUI();
   });
@@ -1398,6 +1993,9 @@ if (btnPrevSet) {
 if (btnNextSet) {
   btnNextSet.addEventListener('click', () => {
     currentExampleVariant = 0;
+    currentMnemonicVariant = 0;
+    if (mnemonicEditView) mnemonicEditView.style.display = 'none';
+    if (mnemonicContentView) mnemonicContentView.style.display = '';
     session.nextSet();
     updateUI();
   });
@@ -2459,11 +3057,19 @@ document.getElementById('btn-close-mnevo').addEventListener('click', () => {
 function startMnevoStreaming(word, turkish) {
   mnevoStreamBox.textContent = '';
   const card = session.currentCard();
+  if (!card) return;
   
-  let content = `⚓ Mnevo Çapası: "${card.mnemonic ? card.mnemonic.split('➔')[0].trim() : word}"\n\n` +
-    `💡 Zihinsel Çapa Senaryosu: ${card.mnemonic || `${word} kelimesi Türkçe "${turkish}" anlamına gelir.`}\n\n` +
-    `📌 Sınav & Bağlam İpucu: ${card.exampleEn}\n"${card.exampleTr}"\n\n` +
-    `🎯 Bu kelimeyi zihnine sabitlemek için aşağıdaki alana kendi kurduğun bir cümleyi yaz!`;
+  const anchor = generateNeuroAnchor(card, currentMnemonicVariant);
+  const pegInfo = anchor ? anchor.peg : word;
+  const storyInfo = anchor ? anchor.story : (card.mnemonic || `${word} ➔ ${turkish}`);
+  const lockInfo = anchor ? anchor.lock : `${word} ➔ ${turkish}`;
+
+  let content = `⚓ Mnevo Nöro-Çapa Koçu: "${card.english.toUpperCase()}"\n\n` +
+    `🔊 Fonetik Ses Köprüsü:\n${pegInfo}\n\n` +
+    `🎬 Canlı Görsel Senaryo:\n${storyInfo}\n\n` +
+    `🔒 Hafıza Kilidi:\n${lockInfo}\n\n` +
+    `📌 Örnek Sınav Cümlesi:\n"${card.exampleEn}"\n(${card.exampleTr})\n\n` +
+    `🎯 Mnevo Taktik Tavsiyesi:\nBu sahneyi zihninde 5 saniye boyunca 3 boyutlu canlandır ve aşağıya kendi cümleni yazarak hafızana mühürle!`;
 
   const words = content.split(' ');
   let idx = 0;
@@ -2474,7 +3080,7 @@ function startMnevoStreaming(word, turkish) {
     } else {
       clearInterval(timer);
     }
-  }, 35);
+  }, 25);
 }
 
 document.getElementById('btn-generate-ai').addEventListener('click', () => {

@@ -148,14 +148,40 @@
               <h2 class="turkish-meaning" id="card-meaning">Zararlı, hasar veren</h2>
             </div>
             
-            <!-- Mnemonik Çapa Kutusu -->
+            <!-- Gelişmiş Zihinsel Çapa (Mnemonic) Sistemi -->
             <div class="mnemonic-box">
-              <div class="mnemonic-tag">
-                <span>⚓ ZİHİNSEL ÇAPA (MNEMONIC)</span>
+              <div class="mnemonic-header-row">
+                <div class="mnemonic-tag">
+                  <span>⚓ ZİHİNSEL ÇAPA</span>
+                  <span class="custom-anchor-badge" id="badge-custom-anchor" style="display: none;">⭐ Kişisel Çapan</span>
+                </div>
+                <div class="mnemonic-actions">
+                  <button class="btn-mnemonic-action" id="btn-refresh-mnemonic" title="Bu kelime için başka bir zihinsel çağrışım üret">🔄 Başka Çapa</button>
+                  <button class="btn-mnemonic-action" id="btn-edit-mnemonic" title="Kendi özel çapanı yaz / düzenle">✏️ Çapamı Yaz</button>
+                </div>
               </div>
-              <p class="mnemonic-text" id="card-mnemonic">
-                De-Tri-Men-Tıl ➔ Deri montlu kimyager fabrikayı patlatıp doğaya ZARAR veriyor.
-              </p>
+              <div class="mnemonic-content-view" id="mnemonic-content-view">
+                <div class="mnemonic-peg-row" id="mnemonic-peg-row">
+                  <span class="peg-label">🔊 Ses Köprüsü:</span>
+                  <span class="peg-text" id="mnemonic-peg-text">De-Tri-Men-Tıl</span>
+                </div>
+                <p class="mnemonic-text" id="card-mnemonic">
+                  Deri montlu kimyager fabrikayı patlatıp doğaya ZARAR veriyor.
+                </p>
+                <div class="mnemonic-lock-row" id="mnemonic-lock-row">
+                  <span class="lock-icon">🔒</span>
+                  <span class="lock-text" id="mnemonic-lock-text">Hafıza Kilidi: Deri mont ➔ Zararlı</span>
+                </div>
+              </div>
+              <!-- Kullanıcı Kendi Çapasını Yazma / Düzenleme Alanı -->
+              <div class="mnemonic-edit-view" id="mnemonic-edit-view" style="display: none;">
+                <textarea class="mnemonic-textarea" id="custom-mnemonic-input" placeholder="Bu kelimeyi aklında nasıl tutarsın? Kendi absürt hikayeni veya ses benzeşimini yaz..." rows="2"></textarea>
+                <div class="mnemonic-edit-btns">
+                  <button class="btn-save-anchor" id="btn-save-custom-anchor">💾 Kaydet</button>
+                  <button class="btn-cancel-anchor" id="btn-cancel-custom-anchor">Vazgeç</button>
+                  <button class="btn-delete-anchor" id="btn-delete-custom-anchor" style="display: none;" title="Varsayılan Çapaya Dön">Varsayılana Dön</button>
+                </div>
+              </div>
             </div>
 
             <!-- Örnek Cümle -->
